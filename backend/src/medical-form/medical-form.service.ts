@@ -15,4 +15,8 @@ export class MedicalFormService {
         const medicalForm = this.medicalFormRepository.create(createMedicalFormDto);
         return await this.medicalFormRepository.save(medicalForm);
     }
+
+    async findAll(): Promise<MedicalForm[]> {
+        return this.medicalFormRepository.find();
+    }
 } 

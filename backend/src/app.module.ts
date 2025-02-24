@@ -3,6 +3,8 @@ import { AuthModule } from './auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './auth/auth.entity';
 import { ConfigModule } from '@nestjs/config';
+import { MedicalFormModule } from './medical-form/medical-form.module';
+import { MedicalForm } from './medical-form/medical-form.entity';
 
 @Module({
     imports: [
@@ -14,10 +16,11 @@ import { ConfigModule } from '@nestjs/config';
             username: process.env.DB_USERNAME || 'Areeb', // Default username
             password: process.env.DB_PASSWORD || '1234', // Default password
             database: process.env.DB_NAME || 'testdb', // Default database
-            entities: [User],
+            entities: [User, MedicalForm],
             synchronize: true, // Set to false in production
         }),
         AuthModule,
+        MedicalFormModule,
     ],
     controllers: [],
     providers: [],

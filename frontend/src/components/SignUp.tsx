@@ -15,6 +15,7 @@ const SignUp: React.FC = () => {
                 username,
                 password,
             });
+            console.log(response.status, " response.data");
             alert(response.data.message); // Handle success
         } catch (err) {
             setError('Registration failed. Please try again.'); // Handle error

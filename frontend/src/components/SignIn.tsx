@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const SignIn: React.FC = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -15,36 +17,40 @@ const SignIn: React.FC = () => {
                 username,
                 password,
             });
-            alert(response.data.message); // Handle success
+            navigate('/dashboard'); // Redirect to dashboard on success
         } catch (err) {
             setError('Login failed. Please try again.'); // Handle error
         }
     };
 
     return (
-        <div>
-            <h2>Sign In</h2>
+        <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
+            <h2 className="text-2xl font-bold mb-4">Sign In</h2>
             <form onSubmit={handleSubmit}>
-                <div>
-                    <label>Username:</label>
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700">Username:</label>
                     <input
                         type="text"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         required
+                        className="mt-1 block w-full border border-gray-300 rounded-md p-2"
                     />
                 </div>
-                <div>
-                    <label>Password:</label>
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700">Password:</label>
                     <input
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
+                        className="mt-1 block w-full border border-gray-300 rounded-md p-2"
                     />
                 </div>
-                <button type="submit">Sign In</button>
-                {error && <p style={{ color: 'red' }}>{error}</p>}
+                <button type="submit" className="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700">
+                    Sign In
+                </button>
+                {error && <p className="text-red-500 mt-2">{error}</p>}
             </form>
         </div>
     );

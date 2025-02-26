@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
-import { AuthDto } from './auth.dto';
+import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
+
 import { User } from './auth.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { RegisterDto, LoginDto } from './auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -14,30 +15,70 @@ export class AuthService {
         private jwtService: JwtService,
     ) {}
 
-    async register(authDto: AuthDto) {
-        console.log(authDto, " authDto");
-        const hashedPassword = await bcrypt.hash(authDto.password, 10);
-        const user = this.usersRepository.create({ ...authDto, password: hashedPassword });
-        await this.usersRepository.save(user);
-        return { message: 'User registered successfully' };
-    }
+    async register(registerDto: RegisterDto): Promise<{ message: string }> {
+        const { email, password, firstName, lastName } = registerDto;
 
-    async login(authDto: AuthDto) {
-        const user = await this.usersRepository.findOne({ where: { username: authDto.username } });
-        if (user && await bcrypt.compare(authDto.password, user.password)) {
-            const payload = { username: user.username, sub: user.id };
-            return {
-                access_token: this.jwtService.sign(payload),
-            };
+        // Check if user already exists
+        const existingUser = await this.usersRepository.findOne({ where: { email } });
+        if (existingUser) {
+            throw new ConflictException('Email already registered');
         }
-        throw new Error('Invalid credentials');
+
+        // Hash password
+        const salt = await bcrypt.genSalt();
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // Create new user
+        const user = this.usersRepository.create({
+            email,
+            password: hashedPassword,
+            firstName,
+            lastName,
+        });
+
+        try {
+            await this.usersRepository.save(user);
+            return { message: 'Registration successful' };
+        } catch (error) {
+            throw new ConflictException('Registration failed');
+        }
     }
 
-    async validateUser(username: string, password: string): Promise<any> {
-        const user = await this.usersRepository.findOne({ where: { username } });
+    async login(loginDto: LoginDto): Promise<{ accessToken: string; user: any }> {
+        const { email, password } = loginDto;
+        const user = await this.usersRepository.findOne({ where: { email } });
+
+        if (!user) {
+            throw new UnauthorizedException('Invalid credentials');
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            throw new UnauthorizedException('Invalid credentials');
+        }
+
+        const payload = { email: user.email, sub: user.id };
+        return {
+            accessToken: this.jwtService.sign(payload),
+            user: {
+                id: user.id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+            },
+        };
+    }
+
+    async validateUser(email: string, password: string): Promise<any> {
+        const user = await this.usersRepository.findOne({ where: { email } });
         if (user && await bcrypt.compare(password, user.password)) {
             return user;
         }
         return null;
+    }
+
+    async getProfile(userId: number): Promise<any> {
+        const user = await this.usersRepository.findOne({ where: { id: userId } });
+        return user;
     }
 } 

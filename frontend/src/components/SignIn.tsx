@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
 const SignIn: React.FC = () => {
-    const [username, setUsername] = useState('');
+    const navigate = useNavigate();
+    const { login } = useAuth();
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -14,12 +16,14 @@ const SignIn: React.FC = () => {
 
         try {
             const response = await axios.post('http://localhost:3000/auth/login', {
-                username,
+                email,
                 password,
             });
-            navigate('/dashboard'); // Redirect to dashboard on success
-        } catch (err) {
-            setError('Login failed. Please try again.'); // Handle error
+            
+            login(response.data.accessToken, response.data.user);
+            navigate('/');
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Login failed');
         }
     };
 
@@ -28,11 +32,11 @@ const SignIn: React.FC = () => {
             <h2 className="text-2xl font-bold mb-4">Sign In</h2>
             <form onSubmit={handleSubmit}>
                 <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700">Username:</label>
+                    <label className="block text-sm font-medium text-gray-700">Email:</label>
                     <input
-                        type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         required
                         className="mt-1 block w-full border border-gray-300 rounded-md p-2"
                     />

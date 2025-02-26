@@ -32,7 +32,7 @@ const MedicalForm: React.FC = () => {
                 testValue,
                 testDate,
             });
-            alert(response.data.message); // Handle success
+           
         } catch (err) {
             setError('Submission failed. Please try again.'); // Handle error
         }

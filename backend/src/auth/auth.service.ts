@@ -1,10 +1,9 @@
-import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
-
-import { User } from './auth.entity';
+import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { JwtService } from '@nestjs/jwt';
+import { User } from './auth.entity';
 import { RegisterDto, LoginDto } from './auth.dto';
 
 @Injectable()
@@ -44,29 +43,57 @@ export class AuthService {
         }
     }
 
-    async login(loginDto: LoginDto): Promise<{ accessToken: string; user: any }> {
+    async login(loginDto: LoginDto) {
         const { email, password } = loginDto;
         const user = await this.usersRepository.findOne({ where: { email } });
 
-        if (!user) {
-            throw new UnauthorizedException('Invalid credentials');
-        }
-
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-        if (!isPasswordValid) {
+        if (!user || !(await bcrypt.compare(password, user.password))) {
             throw new UnauthorizedException('Invalid credentials');
         }
 
         const payload = { email: user.email, sub: user.id };
+        
+        const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
+        const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+
         return {
-            accessToken: this.jwtService.sign(payload),
             user: {
                 id: user.id,
                 email: user.email,
                 firstName: user.firstName,
                 lastName: user.lastName,
             },
+            tokens: {
+                accessToken,
+                refreshToken,
+            },
         };
+    }
+
+    async refreshTokens(refreshToken: string) {
+        try {
+            const payload = this.jwtService.verify(refreshToken);
+            const user = await this.usersRepository.findOne({ where: { id: payload.sub } });
+            
+            if (!user) {
+                throw new UnauthorizedException();
+            }
+
+            const newPayload = { email: user.email, sub: user.id };
+            const accessToken = this.jwtService.sign(newPayload, { expiresIn: '15m' });
+            const newRefreshToken = this.jwtService.sign(newPayload, { expiresIn: '7d' });
+
+            return {
+                accessToken,
+                refreshToken: newRefreshToken,
+            };
+        } catch {
+            throw new UnauthorizedException('Invalid refresh token');
+        }
+    }
+
+    async getProfile(userId: number) {
+        return this.usersRepository.findOne({ where: { id: userId } });
     }
 
     async validateUser(email: string, password: string): Promise<any> {
@@ -76,9 +103,4 @@ export class AuthService {
         }
         return null;
     }
-
-    async getProfile(userId: number): Promise<any> {
-        const user = await this.usersRepository.findOne({ where: { id: userId } });
-        return user;
-    }
-} 
+}

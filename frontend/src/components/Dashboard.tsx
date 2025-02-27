@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line, Label, Legend } from 'recharts';
-import axios from 'axios';
+import api from '../services/api';
 import SideMenu from './SideMenu';
 
 const Dashboard: React.FC = () => {
@@ -22,7 +22,7 @@ const Dashboard: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await axios.get('http://localhost:3000/api/medical-form');
+                const response = await api.get('/api/medical-form');
                 const formattedData = response.data.map((item: any) => ({
                     ...item,
                     name: item.testDate, // For X-axis

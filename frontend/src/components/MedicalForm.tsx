@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import SideMenu from './SideMenu';
 
 const MedicalForm: React.FC = () => {
@@ -27,12 +27,12 @@ const MedicalForm: React.FC = () => {
         }
 
         try {
-            const response = await axios.post('http://localhost:3000/api/medical-form', {
+            await api.post('/api/medical-form', {
                 testType,
                 testValue,
                 testDate,
             });
-           
+            // Handle success
         } catch (err) {
             setError('Submission failed. Please try again.'); // Handle error
         }

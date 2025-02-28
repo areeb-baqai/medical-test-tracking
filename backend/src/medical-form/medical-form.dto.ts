@@ -12,4 +12,8 @@ export class CreateMedicalFormDto {
     @IsNotEmpty()
     @IsDateString()
     testDate: string;
+
+    @IsNotEmpty()
+    @IsNumber()
+    userId: number;
 } 

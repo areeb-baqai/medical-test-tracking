@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import api from '../services/api';
 import SideMenu from './SideMenu';
-
+import { useAuth } from '../context/AuthContext';
 const MedicalForm: React.FC = () => {
     const [testType, setTestType] = useState('');
     const [testValue, setTestValue] = useState('');
     const [testDate, setTestDate] = useState('');
     const [error, setError] = useState('');
+    const { user } = useAuth();
 
     const testTypes = [
         'Platelets Count',
@@ -27,10 +28,11 @@ const MedicalForm: React.FC = () => {
         }
 
         try {
-            await api.post('/api/medical-form', {
+            await api.post('/medical-form', {
                 testType,
                 testValue,
                 testDate,
+                userId: user?.id
             });
             // Handle success
         } catch (err) {

@@ -82,7 +82,6 @@ export class AuthController {
     @Get('profile')
     getProfile(@GetUser() user: User, @Req() req: Request) {
         console.log('Profile requested by user:', user?.id);
-        console.log('Request cookies:', req.cookies);
         return this.authService.getProfile(user.id);
     }
 } 

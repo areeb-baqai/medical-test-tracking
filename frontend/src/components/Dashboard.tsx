@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line, Legend } from 'recharts';
 import api from '../services/api';
-import SideMenu from './SideMenu';
 import { useAuth } from '../context/AuthContext';
 
 const Dashboard: React.FC = () => {
@@ -104,139 +103,178 @@ const Dashboard: React.FC = () => {
     }
 
     return (
-        <div className="flex">
-            <SideMenu />
-            <div className="flex-grow p-4">
-                <div className="container mx-auto p-4">
-                    <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
-                    
-                    {/* Test Type Selector */}
-                    <div className="bg-white p-4 rounded-lg shadow-md mb-6">
-                        <h2 className="text-xl font-semibold mb-4">Select Test Type</h2>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Test Type:</label>
-                            <select
-                                value={testType}
-                                onChange={(e) => setTestType(e.target.value)}
-                                className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                            >
-                                <option value="">All Test Types</option>
-                                {testTypes.map((type) => (
-                                    <option key={type} value={type}>
-                                        {type}
-                                    </option>
-                                ))}
-                            </select>
+        <div className="flex-1 overflow-auto bg-gray-50 p-6">
+            {/* Welcome Section */}
+            <div className="mb-8">
+                <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.firstName}!</h1>
+                <p className="text-gray-600 mt-1">Here's an overview of your health metrics</p>
+            </div>
+
+            {/* Stats Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <div className="flex items-center">
+                        <div className="p-3 bg-indigo-50 rounded-lg">
+                            <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                        </div>
+                        <div className="ml-4">
+                            <h3 className="text-sm font-medium text-gray-500">Total Tests</h3>
+                            <p className="text-2xl font-semibold text-gray-900">{filteredData.length}</p>
                         </div>
                     </div>
+                </div>
 
-                    {/* Main Visualizations */}
-                    <div className="bg-white p-4 rounded-lg shadow-md">
-                        <h2 className="text-2xl font-bold mb-6">Medical Test Results</h2>
-                        
-                        {filteredData.length === 0 ? (
-                            <div className="text-center py-8 text-gray-500">
-                                No test data available. Please try different filters or add test data.
-                            </div>
-                        ) : (
-                            <>
-                                {/* Visualization Tabs */}
-                                <div className="mb-8">
-                                    <h3 className="text-xl font-semibold mb-4">Bar Chart View</h3>
-                                    <div className="overflow-x-auto">
-                                        <BarChart width={800} height={400} data={chartData}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis 
-                                                dataKey="name"
-                                                label={{ value: 'Test Date', position: 'insideBottom', offset: -10 }}
-                                            />
-                                            <YAxis label={{ value: 'Value', angle: -90, position: 'insideLeft' }} />
-                                            <Tooltip />
-                                            <Legend />
-                                            {testType ? (
-                                                <Bar 
-                                                    dataKey="value" 
-                                                    fill="#4F46E5"
-                                                    name={testType}
-                                                />
-                                            ) : (
-                                                uniqueTestTypes.map((type, index) => (
-                                                    <Bar 
-                                                        key={type} 
-                                                        dataKey={type} 
-                                                        fill={`hsl(${index * 30}, 70%, 50%)`}
-                                                        name={type}
-                                                    />
-                                                ))
-                                            )}
-                                        </BarChart>
-                                    </div>
-                                </div>
-
-                                {/* Line Chart */}
-                                <div className="mb-8">
-                                    <h3 className="text-xl font-semibold mb-4">Line Chart View</h3>
-                                    <div className="overflow-x-auto">
-                                        <LineChart width={800} height={400} data={chartData}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis 
-                                                dataKey="name"
-                                                label={{ value: 'Test Date', position: 'insideBottom', offset: -10 }}
-                                            />
-                                            <YAxis label={{ value: 'Value', angle: -90, position: 'insideLeft' }} />
-                                            <Tooltip />
-                                            <Legend />
-                                            {testType ? (
-                                                <Line
-                                                    type="monotone"
-                                                    dataKey="value"
-                                                    stroke="#4F46E5"
-                                                    name={testType}
-                                                    connectNulls={true}
-                                                />
-                                            ) : (
-                                                uniqueTestTypes.map((type, index) => (
-                                                    <Line
-                                                        key={type}
-                                                        type="monotone"
-                                                        dataKey={type}
-                                                        stroke={`hsl(${index * 30}, 70%, 50%)`}
-                                                        name={type}
-                                                        connectNulls={true}
-                                                    />
-                                                ))
-                                            )}
-                                        </LineChart>
-                                    </div>
-                                </div>
-
-                                {/* Test Data List */}
-                                <div>
-                                    <h3 className="text-xl font-semibold mb-4">Test Records</h3>
-                                    <div className="overflow-x-auto">
-                                        <table className="min-w-full divide-y divide-gray-200">
-                                            <thead className="bg-gray-50">
-                                                <tr>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Test Type</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="bg-white divide-y divide-gray-200">
-                                                {filteredData.map((item, index) => (
-                                                    <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                                        <td className="px-6 py-4 whitespace-nowrap">{item.testType}</td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">{item.testValue}</td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">{item.testDate}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </>
-                        )}
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <div className="flex items-center">
+                        <div className="p-3 bg-green-50 rounded-lg">
+                            <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                        </div>
+                        <div className="ml-4">
+                            <h3 className="text-sm font-medium text-gray-500">Latest Reading</h3>
+                            <p className="text-2xl font-semibold text-gray-900">
+                                {filteredData[0]?.testValue || 'N/A'}
+                            </p>
+                        </div>
                     </div>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <div className="flex items-center">
+                        <div className="p-3 bg-purple-50 rounded-lg">
+                            <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div className="ml-4">
+                            <h3 className="text-sm font-medium text-gray-500">Last Test Date</h3>
+                            <p className="text-2xl font-semibold text-gray-900">
+                                {filteredData[0]?.testDate || 'N/A'}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Test Type Filter */}
+            <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold text-gray-900">Filter Results</h2>
+                </div>
+                <div className="max-w-xs">
+                    <select
+                        value={testType}
+                        onChange={(e) => setTestType(e.target.value)}
+                        className="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+                    >
+                        <option value="">All Test Types</option>
+                        {testTypes.map((type) => (
+                            <option key={type} value={type}>{type}</option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Bar Chart */}
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Test Results - Bar Chart</h3>
+                    <div className="overflow-x-auto">
+                        <BarChart width={600} height={300} data={chartData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            {testType ? (
+                                <Bar dataKey="value" fill="#4F46E5" name={testType} />
+                            ) : (
+                                uniqueTestTypes.map((type, index) => (
+                                    <Bar 
+                                        key={type} 
+                                        dataKey={type} 
+                                        fill={`hsl(${index * 30}, 70%, 50%)`}
+                                        name={type}
+                                    />
+                                ))
+                            )}
+                        </BarChart>
+                    </div>
+                </div>
+
+                {/* Line Chart */}
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Test Results - Line Chart</h3>
+                    <div className="overflow-x-auto">
+                        <LineChart width={600} height={300} data={chartData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            {testType ? (
+                                <Line
+                                    type="monotone"
+                                    dataKey="value"
+                                    stroke="#4F46E5"
+                                    name={testType}
+                                />
+                            ) : (
+                                uniqueTestTypes.map((type, index) => (
+                                    <Line
+                                        key={type}
+                                        type="monotone"
+                                        dataKey={type}
+                                        stroke={`hsl(${index * 30}, 70%, 50%)`}
+                                        name={type}
+                                    />
+                                ))
+                            )}
+                        </LineChart>
+                    </div>
+                </div>
+            </div>
+
+            {/* Recent Tests Table */}
+            <div className="mt-8 bg-white rounded-xl shadow-sm">
+                <div className="p-6 border-b border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900">Recent Tests</h3>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Test Type
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Value
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Date
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {filteredData.slice(0, 5).map((item, index) => (
+                                <tr key={index} className="hover:bg-gray-50">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        {item.testType}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {item.testValue}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {item.testDate}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

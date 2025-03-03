@@ -22,6 +22,7 @@ interface AuthContextType {
     logout: () => Promise<void>;
     loading: boolean;
     refreshAuth: () => Promise<void>;
+    updateUser: (userData: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -162,13 +163,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         saveUserToStorage(userData);
     }, []);
 
+    const updateUser = (userData: Partial<User>) => {
+        setUser(prev => prev ? { ...prev, ...userData } : null);
+    };
+
     const contextValue = {
         isAuthenticated,
         user,
         login,
         logout,
         loading,
-        refreshAuth
+        refreshAuth,
+        updateUser
     };
 
     return (

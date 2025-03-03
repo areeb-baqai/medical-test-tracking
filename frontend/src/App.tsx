@@ -6,6 +6,7 @@ import SignIn from './components/SignIn';
 import SignUp from './components/SignUp';
 import MedicalForm from './components/MedicalForm';
 import SideMenu from './components/SideMenu';
+import ProfileSettings from './components/ProfileSettings';
 import './index.css';
 
 // Header component for private routes
@@ -139,6 +140,11 @@ const AppContent: React.FC = () => {
             <Route path="/medical-form" element={
                 <PrivateRoute>
                     <MedicalForm />
+                </PrivateRoute>
+            } />
+            <Route path="/profile" element={
+                <PrivateRoute>
+                    <ProfileSettings />
                 </PrivateRoute>
             } />
 

@@ -9,8 +9,6 @@ const Dashboard: React.FC = () => {
     const [medicalData, setMedicalData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [testType, setTestType] = useState('');
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
     const [filteredData, setFilteredData] = useState<any[]>([]);
 
     const testTypes = [
@@ -47,33 +45,56 @@ const Dashboard: React.FC = () => {
         fetchMedicalData();
     }, [user?.id]);
 
-    const handleFilter = () => {
+    // Apply filtering when test type changes
+    useEffect(() => {
         const filtered = medicalData.filter((item) => {
-            const date = new Date(item.testDate);
-            return (
-                (!testType || item.testType === testType) &&
-                (!startDate || date >= new Date(startDate)) &&
-                (!endDate || date <= new Date(endDate))
-            );
+            return (!testType || item.testType === testType);
         });
         setFilteredData(filtered);
+    }, [testType, medicalData]);
+
+    // Prepare chart data based on filter selection
+    const prepareChartData = () => {
+        if (!testType) {
+            // For "All Test Types" - group data by test date, avoiding duplicates
+            return filteredData.reduce((acc: any[], item) => {
+                const existingDate = acc.find(d => d.name === item.testDate);
+                if (existingDate) {
+                    existingDate[item.testType] = item.testValue;
+                } else {
+                    acc.push({
+                        name: item.testDate,
+                        [item.testType]: item.testValue,
+                    });
+                }
+                return acc;
+            }, [])
+            .sort((a, b) => new Date(a.name).getTime() - new Date(b.name).getTime());
+        } else {
+            // For specific test type - sort by date for historical view
+            // Deduplicate entries with the same date by keeping the last one
+            const uniqueDates = new Map();
+            
+            filteredData
+                .filter(item => item.testType === testType)
+                .forEach(item => {
+                    uniqueDates.set(item.testDate, item);
+                });
+                
+            const testSpecificData = Array.from(uniqueDates.values())
+                .sort((a, b) => new Date(a.testDate).getTime() - new Date(b.testDate).getTime())
+                .map(item => ({
+                    name: item.testDate,
+                    value: item.testValue
+                }));
+                
+            return testSpecificData;
+        }
     };
 
-    // Group data by test type for better visualization
-    const groupedData = filteredData.reduce((acc: any[], item) => {
-        const existingDate = acc.find(d => d.name === item.testDate);
-        if (existingDate) {
-            existingDate[item.testType] = item.testValue;
-        } else {
-            acc.push({
-                name: item.testDate,
-                [item.testType]: item.testValue,
-            });
-        }
-        return acc;
-    }, []);
-
-    // Get unique test types for the legend
+    const chartData = prepareChartData();
+    
+    // Get unique test types for the legend (only used when showing all test types)
     const uniqueTestTypes = Array.from(new Set(filteredData.map(item => item.testType)));
 
     if (loading) {
@@ -89,50 +110,24 @@ const Dashboard: React.FC = () => {
                 <div className="container mx-auto p-4">
                     <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
                     
-                    {/* Filter Controls */}
+                    {/* Test Type Selector */}
                     <div className="bg-white p-4 rounded-lg shadow-md mb-6">
-                        <h2 className="text-xl font-semibold mb-4">Filter Data</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Test Type:</label>
-                                <select
-                                    value={testType}
-                                    onChange={(e) => setTestType(e.target.value)}
-                                    className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                                >
-                                    <option value="">All Test Types</option>
-                                    {testTypes.map((type) => (
-                                        <option key={type} value={type}>
-                                            {type}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Start Date:</label>
-                                <input
-                                    type="date"
-                                    value={startDate}
-                                    onChange={(e) => setStartDate(e.target.value)}
-                                    className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">End Date:</label>
-                                <input
-                                    type="date"
-                                    value={endDate}
-                                    onChange={(e) => setEndDate(e.target.value)}
-                                    className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                                />
-                            </div>
+                        <h2 className="text-xl font-semibold mb-4">Select Test Type</h2>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Test Type:</label>
+                            <select
+                                value={testType}
+                                onChange={(e) => setTestType(e.target.value)}
+                                className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                            >
+                                <option value="">All Test Types</option>
+                                {testTypes.map((type) => (
+                                    <option key={type} value={type}>
+                                        {type}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
-                        <button
-                            onClick={handleFilter}
-                            className="mt-4 bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700"
-                        >
-                            Apply Filters
-                        </button>
                     </div>
 
                     {/* Main Visualizations */}
@@ -149,7 +144,7 @@ const Dashboard: React.FC = () => {
                                 <div className="mb-8">
                                     <h3 className="text-xl font-semibold mb-4">Bar Chart View</h3>
                                     <div className="overflow-x-auto">
-                                        <BarChart width={800} height={400} data={groupedData}>
+                                        <BarChart width={800} height={400} data={chartData}>
                                             <CartesianGrid strokeDasharray="3 3" />
                                             <XAxis 
                                                 dataKey="name"
@@ -158,14 +153,22 @@ const Dashboard: React.FC = () => {
                                             <YAxis label={{ value: 'Value', angle: -90, position: 'insideLeft' }} />
                                             <Tooltip />
                                             <Legend />
-                                            {uniqueTestTypes.map((type, index) => (
+                                            {testType ? (
                                                 <Bar 
-                                                    key={type} 
-                                                    dataKey={type} 
-                                                    fill={`hsl(${index * 30}, 70%, 50%)`}
-                                                    name={type}
+                                                    dataKey="value" 
+                                                    fill="#4F46E5"
+                                                    name={testType}
                                                 />
-                                            ))}
+                                            ) : (
+                                                uniqueTestTypes.map((type, index) => (
+                                                    <Bar 
+                                                        key={type} 
+                                                        dataKey={type} 
+                                                        fill={`hsl(${index * 30}, 70%, 50%)`}
+                                                        name={type}
+                                                    />
+                                                ))
+                                            )}
                                         </BarChart>
                                     </div>
                                 </div>
@@ -174,7 +177,7 @@ const Dashboard: React.FC = () => {
                                 <div className="mb-8">
                                     <h3 className="text-xl font-semibold mb-4">Line Chart View</h3>
                                     <div className="overflow-x-auto">
-                                        <LineChart width={800} height={400} data={groupedData}>
+                                        <LineChart width={800} height={400} data={chartData}>
                                             <CartesianGrid strokeDasharray="3 3" />
                                             <XAxis 
                                                 dataKey="name"
@@ -183,15 +186,26 @@ const Dashboard: React.FC = () => {
                                             <YAxis label={{ value: 'Value', angle: -90, position: 'insideLeft' }} />
                                             <Tooltip />
                                             <Legend />
-                                            {uniqueTestTypes.map((type, index) => (
+                                            {testType ? (
                                                 <Line
-                                                    key={type}
                                                     type="monotone"
-                                                    dataKey={type}
-                                                    stroke={`hsl(${index * 30}, 70%, 50%)`}
-                                                    name={type}
+                                                    dataKey="value"
+                                                    stroke="#4F46E5"
+                                                    name={testType}
+                                                    connectNulls={true}
                                                 />
-                                            ))}
+                                            ) : (
+                                                uniqueTestTypes.map((type, index) => (
+                                                    <Line
+                                                        key={type}
+                                                        type="monotone"
+                                                        dataKey={type}
+                                                        stroke={`hsl(${index * 30}, 70%, 50%)`}
+                                                        name={type}
+                                                        connectNulls={true}
+                                                    />
+                                                ))
+                                            )}
                                         </LineChart>
                                     </div>
                                 </div>

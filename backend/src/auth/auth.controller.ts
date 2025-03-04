@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Req, Res, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Get, Req, Res, UseGuards, HttpCode, HttpStatus, Put } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto } from './auth.dto';
@@ -6,6 +6,11 @@ import { AuthGuard } from '@nestjs/passport';
 import { JwtAuthGuard } from './auth.guard';
 import { GetUser } from './user.decorator';
 import { User } from './auth.entity';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+
+interface RequestWithUser extends Request {
+    user: { id: number }
+}
 
 @Controller('auth')
 export class AuthController {
@@ -80,8 +85,16 @@ export class AuthController {
 
     @UseGuards(JwtAuthGuard)
     @Get('profile')
-    getProfile(@GetUser() user: User, @Req() req: Request) {
-        console.log('Profile requested by user:', user?.id);
-        return this.authService.getProfile(user.id);
+    async getProfile(@Req() req: RequestWithUser) {
+        return this.authService.getProfile(req.user.id);
+    }
+
+    @Put('profile')
+    @UseGuards(JwtAuthGuard)
+    async updateProfile(
+        @Req() req: RequestWithUser,
+        @Body() updateProfileDto: UpdateProfileDto
+    ) {
+        return this.authService.updateProfile(req.user.id, updateProfileDto);
     }
 } 

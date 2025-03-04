@@ -33,7 +33,7 @@ const ProfileSettings: React.FC = () => {
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const response = await api.get(`/users/${user?.id}/profile`);
+                const response = await api.getProfile();
                 setProfileData(response.data);
             } catch (err) {
                 setError('Failed to load profile data');
@@ -43,7 +43,7 @@ const ProfileSettings: React.FC = () => {
         };
 
         fetchProfile();
-    }, [user?.id]);
+    }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         setProfileData(prev => ({
@@ -58,7 +58,7 @@ const ProfileSettings: React.FC = () => {
         setIsSaving(true);
 
         try {
-            const response = await api.put(`/users/${user?.id}/profile`, profileData);
+            const response = await api.updateProfile(profileData);
             updateUser(response.data);
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 3000);

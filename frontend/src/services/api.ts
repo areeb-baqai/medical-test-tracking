@@ -1,9 +1,9 @@
-import axios, { AxiosError, AxiosRequestConfig } from 'axios';
+import axios, { AxiosError, AxiosRequestConfig, AxiosInstance } from 'axios';
 
 const API_URL = 'http://localhost:3000';
 
 // Create axios instance with defaults
-const api = axios.create({
+const axiosInstance: AxiosInstance = axios.create({
     baseURL: API_URL,
     withCredentials: true, // This is crucial for cookies to be sent!
     timeout: 10000,
@@ -28,7 +28,7 @@ const processQueue = (error: any = null) => {
 };
 
 // Response interceptor for handling token refresh
-api.interceptors.response.use(
+axiosInstance.interceptors.response.use(
     (response) => response,
     async (error: AxiosError) => {
         const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
@@ -46,7 +46,7 @@ api.interceptors.response.use(
                     failedQueue.push({ resolve, reject });
                 })
                 .then(() => {
-                    return api(originalRequest);
+                    return axiosInstance(originalRequest);
                 })
                 .catch(err => {
                     return Promise.reject(err);
@@ -58,13 +58,13 @@ api.interceptors.response.use(
             
             try {
                 // Try to refresh the token
-                await api.post('/auth/refresh');
+                await axiosInstance.post('/auth/refresh');
                 
                 // Process queue of pending requests
                 processQueue();
                 
                 // If refresh was successful, retry the original request
-                return api(originalRequest);
+                return axiosInstance(originalRequest);
             } catch (refreshError) {
                 // If refresh fails, handle logout
                 processQueue(refreshError);
@@ -82,5 +82,14 @@ api.interceptors.response.use(
         return Promise.reject(error);
     }
 );
+
+const api = {
+    ...axiosInstance,
+    getProfile: () => axiosInstance.get('/auth/profile'),
+    updateProfile: (profileData: any) => axiosInstance.put('/auth/profile', profileData)
+} as AxiosInstance & {
+    getProfile: () => Promise<any>;
+    updateProfile: (profileData: any) => Promise<any>;
+};
 
 export default api; 

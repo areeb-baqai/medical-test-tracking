@@ -8,6 +8,7 @@ import MedicalForm from './components/MedicalForm';
 import SideMenu from './components/SideMenu';
 import ProfileSettings from './components/ProfileSettings';
 import './index.css';
+import { TestStatsProvider } from './context/TestStatsContext';
 
 // Header component for private routes
 const Header: React.FC = () => {
@@ -158,7 +159,9 @@ const App: React.FC = () => {
     return (
         <Router>
             <AuthProvider>
-                <AppContent />
+                <TestStatsProvider>
+                    <AppContent />
+                </TestStatsProvider>
             </AuthProvider>
         </Router>
     );

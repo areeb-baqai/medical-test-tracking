@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import api from '../services/api';
+import { useTestStats } from '../context/TestStatsContext';
 
 interface TestStats {
     lastTestDate: string;
@@ -9,33 +10,17 @@ interface TestStats {
 
 const SideMenu: React.FC = () => {
     const location = useLocation();
-    const [stats, setStats] = useState<TestStats>({
-        lastTestDate: "Not available",
-        totalTests: 0
-    });
+    const { stats } = useTestStats();
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const fetchTestStats = async () => {
-            try {
-                setIsLoading(true);
-                const response = await api.get('/api/tests/stats');
-                setStats({
-                    lastTestDate: response.data.lastTestDate || "Not available",
-                    totalTests: response.data.totalTests || 0
-                });
-                setError(null);
-            } catch (err) {
-                console.error("Failed to fetch test statistics:", err);
-                setError("Failed to load statistics");
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchTestStats();
-    }, []);
+        if (stats.totalTests > 0) {
+            setIsLoading(false);
+        }  
+        
+        }, [stats.totalTests]); 
+    
 
     const menuItems = [
         {

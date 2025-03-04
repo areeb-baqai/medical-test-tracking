@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useTestStats } from '../context/TestStatsContext';
 
 const MedicalForm: React.FC = () => {
     const [testType, setTestType] = useState('');
@@ -12,6 +13,7 @@ const MedicalForm: React.FC = () => {
     const [showSuccessDialog, setShowSuccessDialog] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const navigate = useNavigate();
+    const { refreshStats } = useTestStats();
 
     const testTypes = [
         'Platelets Count',
@@ -40,6 +42,7 @@ const MedicalForm: React.FC = () => {
                 testDate,
                 userId: user?.id
             });
+            await refreshStats();
             setShowSuccessDialog(true);
             setTimeout(() => {
                 navigate('/');

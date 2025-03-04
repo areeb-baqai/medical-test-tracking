@@ -1,8 +1,41 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import api from '../services/api';
+
+interface TestStats {
+    lastTestDate: string;
+    totalTests: number;
+}
 
 const SideMenu: React.FC = () => {
     const location = useLocation();
+    const [stats, setStats] = useState<TestStats>({
+        lastTestDate: "Not available",
+        totalTests: 0
+    });
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchTestStats = async () => {
+            try {
+                setIsLoading(true);
+                const response = await api.get('/api/tests/stats');
+                setStats({
+                    lastTestDate: response.data.lastTestDate || "Not available",
+                    totalTests: response.data.totalTests || 0
+                });
+                setError(null);
+            } catch (err) {
+                console.error("Failed to fetch test statistics:", err);
+                setError("Failed to load statistics");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchTestStats();
+    }, []);
 
     const menuItems = [
         {
@@ -72,13 +105,25 @@ const SideMenu: React.FC = () => {
                         <div className="bg-gray-50 p-4 rounded-lg">
                             <div className="flex items-center justify-between">
                                 <p className="text-sm text-gray-600">Last Test</p>
-                                <span className="text-sm font-medium text-gray-900">2 days ago</span>
+                                {isLoading ? (
+                                    <span className="text-sm text-gray-400">Loading...</span>
+                                ) : error ? (
+                                    <span className="text-sm text-red-500">Error</span>
+                                ) : (
+                                    <span className="text-sm font-medium text-gray-900">{stats.lastTestDate}</span>
+                                )}
                             </div>
                         </div>
                         <div className="bg-gray-50 p-4 rounded-lg">
                             <div className="flex items-center justify-between">
                                 <p className="text-sm text-gray-600">Total Tests</p>
-                                <span className="text-sm font-medium text-gray-900">24</span>
+                                {isLoading ? (
+                                    <span className="text-sm text-gray-400">Loading...</span>
+                                ) : error ? (
+                                    <span className="text-sm text-red-500">Error</span>
+                                ) : (
+                                    <span className="text-sm font-medium text-gray-900">{stats.totalTests}</span>
+                                )}
                             </div>
                         </div>
                     </div>

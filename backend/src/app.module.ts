@@ -7,6 +7,7 @@ import { MedicalFormModule } from './medical-form/medical-form.module';
 import { MedicalForm } from './medical-form/medical-form.entity';
 import { BloodTestModule } from './blood-test/blood-test.module';
 import { BloodTest } from './blood-test/blood-test.entity';
+import { StatsModule } from './stats/stats.module';
 @Module({
     imports: [
         ConfigModule.forRoot(), // Load environment variables
@@ -23,6 +24,7 @@ import { BloodTest } from './blood-test/blood-test.entity';
         AuthModule,
         MedicalFormModule,
         BloodTestModule,
+        StatsModule,
     ],
     controllers: [],
     providers: [],

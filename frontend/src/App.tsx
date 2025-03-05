@@ -1,92 +1,171 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Route, Routes, Link, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate, useLocation, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Dashboard from './components/Dashboard';
-import SignUp from './components/SignUp';
 import SignIn from './components/SignIn';
+import SignUp from './components/SignUp';
 import MedicalForm from './components/MedicalForm';
 import SideMenu from './components/SideMenu';
+import ProfileSettings from './components/ProfileSettings';
 import './index.css';
+import { TestStatsProvider } from './context/TestStatsContext';
+import { ToastContainer } from 'react-toastify';
 
+// Header component for private routes
 const Header: React.FC = () => {
-    const { isAuthenticated, user, logout } = useAuth();
+    const { user, logout } = useAuth();
     const [dropdownOpen, setDropdownOpen] = useState(false);
 
-    const toggleDropdown = () => {
-        setDropdownOpen(!dropdownOpen);
-    };
-
     return (
-        <header className="bg-blue-600 text-white p-4 flex justify-between items-center sticky top-0 z-10">
-            <h1 className="text-2xl font-bold">Techwards Medical Application</h1>
-            <div className="relative">
-                {isAuthenticated ? (
-                    <>
-                        <button
-                            onClick={toggleDropdown}
-                            className="bg-blue-700 text-white px-4 py-2 rounded-md focus:outline-none"
-                        >
-                            {user?.firstName} {user?.lastName}
-                        </button>
-                        {dropdownOpen && (
-                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
-                                <Link to="/profile" className="block px-4 py-2 text-gray-800 hover:bg-gray-200">
-                                    Profile
+        <header className="bg-white border-b border-gray-200 px-4 py-3">
+            <div className="flex justify-between items-center">
+                <div className="flex items-center space-x-4">
+                    <h1 className="text-xl font-semibold text-gray-800">TibbTrack</h1>
+                </div>
+                <div className="relative">
+                    <button
+                        onClick={() => setDropdownOpen(!dropdownOpen)}
+                        className="flex items-center space-x-2 text-gray-700 hover:text-gray-900"
+                    >
+                        <span>{user?.firstName} {user?.lastName}</span>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    
+                    {dropdownOpen && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50">
+                            <div className="py-1">
+                                <Link 
+                                    to="/profile" 
+                                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                    Profile Settings
                                 </Link>
                                 <button
                                     onClick={() => {
                                         logout();
                                         setDropdownOpen(false);
                                     }}
-                                    className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-200"
+                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                 >
-                                    Logout
+                                    Sign out
                                 </button>
                             </div>
-                        )}
-                    </>
-                ) : (
-                    <div className="space-x-4">
-                        <Link to="/signin" className="bg-blue-700 text-white px-4 py-2 rounded-md hover:bg-blue-800">
-                            Sign In
-                        </Link>
-                        <Link to="/signup" className="bg-blue-700 text-white px-4 py-2 rounded-md hover:bg-blue-800">
-                            Sign Up
-                        </Link>
-                    </div>
-                )}
+                        </div>
+                    )}
+                </div>
             </div>
         </header>
     );
 };
 
-const PrivateRoute: React.FC<{ element: React.ReactElement }> = ({ element }) => {
+// Footer component for private routes
+const Footer: React.FC = () => {
+    return (
+        <footer className="bg-white border-t border-gray-200 py-4">
+            <div className="container mx-auto px-4 text-center text-gray-600 text-sm">
+                <p>© 2024 TibbTrack. All rights reserved.</p>
+            </div>
+        </footer>
+    );
+};
+
+// Layout component for authenticated pages
+const PrivateLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    return (
+        <div className="flex min-h-screen bg-gray-50">
+            <SideMenu />
+            <div className="flex-1 flex flex-col">
+                <Header />
+                <main className="flex-1 p-6">
+                    {children}
+                </main>
+                <Footer />
+            </div>
+        </div>
+    );
+};
+
+// Protected Route component
+const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { isAuthenticated, loading } = useAuth();
+    const location = useLocation();
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+            </div>
+        );
+    }
+
+    if (!isAuthenticated) {
+        return <Navigate to="/signin" state={{ from: location }} replace />;
+    }
+
+    return <PrivateLayout>{children}</PrivateLayout>;
+};
+
+// Public Route component
+const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { isAuthenticated } = useAuth();
-    return isAuthenticated ? element : <Navigate to="/signin" />;
+    
+    if (isAuthenticated) {
+        return <Navigate to="/" replace />;
+    }
+
+    return <>{children}</>;
+};
+
+const AppContent: React.FC = () => {
+    return (
+        <Routes>
+            {/* Public Routes - No header/footer */}
+            <Route path="/signin" element={
+                <PublicRoute>
+                    <SignIn />
+                </PublicRoute>
+            } />
+            <Route path="/signup" element={
+                <PublicRoute>
+                    <SignUp />
+                </PublicRoute>
+            } />
+
+            {/* Private Routes - With header/footer */}
+            <Route path="/" element={
+                <PrivateRoute>
+                    <Dashboard />
+                </PrivateRoute>
+            } />
+            <Route path="/medical-form" element={
+                <PrivateRoute>
+                    <MedicalForm />
+                </PrivateRoute>
+            } />
+            <Route path="/profile" element={
+                <PrivateRoute>
+                    <ProfileSettings />
+                </PrivateRoute>
+            } />
+
+            {/* Catch all route */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+    );
 };
 
 const App: React.FC = () => {
     return (
-        <AuthProvider>
-            <Router>
-                <div className="min-h-screen flex flex-col">
-                    <Header />
-                    <div className="flex flex-grow">
-                        <main className="flex-grow p-4 overflow-y-auto">
-                            <Routes>
-                                <Route path="/signup" element={<SignUp />} />
-                                <Route path="/signin" element={<SignIn />} />
-                                <Route path="/" element={<PrivateRoute element={<Dashboard />} />} />
-                                <Route path="/medical-form" element={<PrivateRoute element={<MedicalForm />} />} />
-                            </Routes>
-                        </main>
-                    </div>
-                    <footer className="bg-blue-600 text-white p-4 text-center sticky bottom-0">
-                        <p>Techwards © 2025</p>
-                    </footer>
-                </div>
-            </Router>
-        </AuthProvider>
+        <Router>
+            <AuthProvider>
+                <TestStatsProvider>
+                    <AppContent />
+                    <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} />
+                </TestStatsProvider>
+            </AuthProvider>
+        </Router>
     );
 };
 

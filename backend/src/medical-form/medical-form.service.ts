@@ -16,7 +16,11 @@ export class MedicalFormService {
         return await this.medicalFormRepository.save(medicalForm);
     }
 
-    async findAll(): Promise<MedicalForm[]> {
-        return this.medicalFormRepository.find();
+    async findAll(id: number): Promise<MedicalForm[]> {
+        return this.medicalFormRepository.find({
+            where: {
+                userId: id
+            }
+        });
     }
 } 

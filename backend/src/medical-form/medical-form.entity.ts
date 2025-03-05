@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
+import { User } from '../auth/auth.entity';
 
 @Entity('medical_forms')
 export class MedicalForm {
@@ -13,4 +14,14 @@ export class MedicalForm {
 
     @Column()
     testDate: string;
+
+    @Column()
+    userId: number;
+
+    @ManyToOne(() => User)
+    @JoinColumn({ name: 'userId' })
+    user: User;
+
+    @CreateDateColumn()
+    createdAt: Date;
 } 

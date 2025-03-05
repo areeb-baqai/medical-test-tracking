@@ -9,6 +9,7 @@ import SideMenu from './components/SideMenu';
 import ProfileSettings from './components/ProfileSettings';
 import './index.css';
 import { TestStatsProvider } from './context/TestStatsContext';
+import { ToastContainer } from 'react-toastify';
 
 // Header component for private routes
 const Header: React.FC = () => {
@@ -161,6 +162,7 @@ const App: React.FC = () => {
             <AuthProvider>
                 <TestStatsProvider>
                     <AppContent />
+                    <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} />
                 </TestStatsProvider>
             </AuthProvider>
         </Router>

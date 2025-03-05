@@ -3,6 +3,8 @@ import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useTestStats } from '../context/TestStatsContext';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const MedicalForm: React.FC = () => {
     const [testType, setTestType] = useState('');
@@ -10,7 +12,6 @@ const MedicalForm: React.FC = () => {
     const [testDate, setTestDate] = useState('');
     const [error, setError] = useState('');
     const { user } = useAuth();
-    const [showSuccessDialog, setShowSuccessDialog] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const navigate = useNavigate();
     const { refreshStats } = useTestStats();
@@ -35,6 +36,12 @@ const MedicalForm: React.FC = () => {
             return;
         }
 
+        if (parseFloat(testValue) < 0) {
+            setError('Test value must be a non-negative number.');
+            setIsSubmitting(false);
+            return;
+        }
+
         try {
             await api.post('/medical-form', {
                 testType,
@@ -43,7 +50,7 @@ const MedicalForm: React.FC = () => {
                 userId: user?.id
             });
             await refreshStats();
-            setShowSuccessDialog(true);
+            toast.success('Test record added successfully!');
             setTimeout(() => {
                 navigate('/');
             }, 2000);
@@ -53,29 +60,6 @@ const MedicalForm: React.FC = () => {
         } finally {
             setIsSubmitting(false);
         }
-    };
-
-    // Success Dialog Component
-    const SuccessDialog = () => {
-        if (!showSuccessDialog) return null;
-        
-        return (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white p-6 rounded-xl shadow-xl max-w-md w-full transform transition-all">
-                    <div className="text-center">
-                        <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
-                            <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                            </svg>
-                        </div>
-                        <h3 className="mt-4 text-lg font-semibold text-gray-900">Test Record Added!</h3>
-                        <p className="mt-2 text-sm text-gray-500">
-                            Your medical test data has been successfully recorded. Redirecting to dashboard...
-                        </p>
-                    </div>
-                </div>
-            </div>
-        );
     };
 
     return (
@@ -227,7 +211,6 @@ const MedicalForm: React.FC = () => {
                     </div>
                 </div>
             </div>
-            <SuccessDialog />
         </div>
     );
 };

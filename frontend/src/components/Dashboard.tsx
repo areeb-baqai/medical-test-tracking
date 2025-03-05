@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line, Legend } from 'recharts';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import TestHistory from './TestHistory';
 
 const Dashboard: React.FC = () => {
     const { user } = useAuth();
@@ -103,7 +104,7 @@ const Dashboard: React.FC = () => {
     }
 
     return (
-        <div className="flex-1 overflow-auto bg-gray-50 p-6">
+        <div className="container mx-auto px-4 py-6">
             {/* Welcome Section */}
             <div className="mb-8">
                 <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.firstName}!</h1>
@@ -239,43 +240,8 @@ const Dashboard: React.FC = () => {
                 </div>
             </div>
 
-            {/* Recent Tests Table */}
-            <div className="mt-8 bg-white rounded-xl shadow-sm">
-                <div className="p-6 border-b border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900">Recent Tests</h3>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Test Type
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Value
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Date
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {filteredData.slice(0, 5).map((item, index) => (
-                                <tr key={index} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                        {item.testType}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {item.testValue}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {item.testDate}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+            <div className="mt-8">
+                <TestHistory tests={filteredData} />
             </div>
         </div>
     );

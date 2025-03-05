@@ -51,9 +51,7 @@ const MedicalForm: React.FC = () => {
             });
             await refreshStats();
             toast.success('Test record added successfully!');
-            setTimeout(() => {
-                navigate('/');
-            }, 2000);
+            navigate('/');
         } catch (err) {
             console.error('Error submitting medical form:', err);
             setError('Submission failed. Please try again.');

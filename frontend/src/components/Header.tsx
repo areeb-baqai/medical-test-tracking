@@ -11,9 +11,7 @@ const Header: React.FC = () => {
             <div className="px-6 py-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-8">
-                        <h1 className="text-xl font-semibold text-gray-800">
-                            <span className="text-indigo-600">Health</span>ish
-                        </h1>
+                        <h1 className="text-xl font-semibold text-gray-800">TibbTrack</h1>
                         
                         {/* Search Bar */}
                         <div className="hidden md:flex items-center">

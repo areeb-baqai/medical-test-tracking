@@ -42,7 +42,7 @@ const SignIn: React.FC = () => {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
                                     d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
-                            <span className="ml-2 text-2xl font-bold text-white">Healthish</span>
+                            <span className="ml-2 text-2xl font-bold text-white">TibbTrack</span>
                         </div>
                         
                         <div className="space-y-6">

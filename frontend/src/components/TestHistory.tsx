@@ -1,7 +1,6 @@
-import React, { useState, useMemo, Fragment } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Dialog, Transition } from '@headlessui/react';
-import { ChevronDownIcon, ChevronRightIcon, DocumentIcon, ExclamationCircleIcon, XMarkIcon, ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/outline';
+import { ChevronRightIcon, DocumentIcon, ExclamationCircleIcon, ArrowUpIcon, ArrowDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface Test {
@@ -22,12 +21,13 @@ interface TestHistoryProps {
 }
 
 const TestHistory: React.FC<TestHistoryProps> = ({ tests }) => {
-    const [modalOpen, setModalOpen] = useState(false);
-    const [selectedDate, setSelectedDate] = useState('');
+    const [selectedDate, setSelectedDate] = useState<string | null>(null);
+    const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [sortField, setSortField] = useState<'testType' | 'testValue'>('testType');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const [filterType, setFilterType] = useState<string>('all');
     const [noteInput, setNoteInput] = useState<{ [testId: number]: string }>({});
+    const panelRef = useRef<HTMLDivElement>(null);
 
     // Group tests by date
     const groupedTests = useMemo(() => {
@@ -46,12 +46,7 @@ const TestHistory: React.FC<TestHistoryProps> = ({ tests }) => {
         return Object.keys(groupedTests).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
     }, [groupedTests]);
 
-    // Get tests for the selected date
-    const selectedDateTests = useMemo(() => {
-        return selectedDate ? groupedTests[selectedDate] : [];
-    }, [selectedDate, groupedTests]);
-
-    // Sort and filter tests
+    // Sort and filter tests for each date
     const getSortedAndFilteredTests = (dateTests: Test[]) => {
         let filtered = filterType === 'all' 
             ? dateTests 
@@ -71,6 +66,15 @@ const TestHistory: React.FC<TestHistoryProps> = ({ tests }) => {
         });
     };
 
+    const openPanel = (date: string) => {
+        setSelectedDate(date);
+        setIsPanelOpen(true);
+    };
+
+    const closePanel = () => {
+        setIsPanelOpen(false);
+    };
+
     const handleSort = (field: 'testType' | 'testValue') => {
         if (sortField === field) {
             setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -80,19 +84,8 @@ const TestHistory: React.FC<TestHistoryProps> = ({ tests }) => {
         }
     };
 
-    const openModal = (date: string) => {
-        setSelectedDate(date);
-        setModalOpen(true);
-    };
-
-    const closeModal = () => {
-        setModalOpen(false);
-    };
-
-    const exportTests = () => {
-        if (!selectedDate) return;
-        
-        const testsToExport = groupedTests[selectedDate];
+    const exportTests = (date: string) => {
+        const testsToExport = groupedTests[date];
         const csv = [
             ['Test Type', 'Value', 'Date', 'Notes', 'Status'].join(','),
             ...testsToExport.map(test => [
@@ -108,7 +101,7 @@ const TestHistory: React.FC<TestHistoryProps> = ({ tests }) => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `tests-${selectedDate}.csv`;
+        a.download = `tests-${date}.csv`;
         a.click();
         window.URL.revokeObjectURL(url);
     };
@@ -130,9 +123,26 @@ const TestHistory: React.FC<TestHistoryProps> = ({ tests }) => {
         
         return trendData;
     };
+    
+    // Close panel when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
+                closePanel();
+            }
+        };
+        
+        if (isPanelOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isPanelOpen]);
 
     return (
-        <div className="bg-white rounded-lg shadow">
+        <div className="bg-white rounded-lg shadow relative">
             <div className="p-4 border-b border-gray-200">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-lg font-semibold text-gray-900">Recent Tests</h2>
@@ -166,16 +176,16 @@ const TestHistory: React.FC<TestHistoryProps> = ({ tests }) => {
                                     Tests
                                 </th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    View Details
+                                    Actions
                                 </th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                             {sortedDates.map(date => (
                                 <tr 
-                                    key={date} 
+                                    key={date}
                                     className="hover:bg-gray-50 cursor-pointer"
-                                    onClick={() => openModal(date)}
+                                    onClick={() => openPanel(date)}
                                 >
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="text-sm font-medium text-gray-900">
@@ -188,7 +198,18 @@ const TestHistory: React.FC<TestHistoryProps> = ({ tests }) => {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <ChevronRightIcon className="h-5 w-5 inline-block text-gray-400" />
+                                        <div className="flex items-center justify-end space-x-2">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    exportTests(date);
+                                                }}
+                                                className="text-gray-400 hover:text-gray-600"
+                                            >
+                                                <DocumentIcon className="h-5 w-5" />
+                                            </button>
+                                            <ChevronRightIcon className="h-5 w-5 text-gray-400" />
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -197,194 +218,177 @@ const TestHistory: React.FC<TestHistoryProps> = ({ tests }) => {
                 )}
             </div>
 
-            {/* Detailed Test Modal */}
-            <Transition appear show={modalOpen} as={Fragment}>
-                <Dialog as="div" className="relative z-10" onClose={closeModal}>
-                    <Transition.Child
-                        as={Fragment}
-                        enter="ease-out duration-300"
-                        enterFrom="opacity-0"
-                        enterTo="opacity-100"
-                        leave="ease-in duration-200"
-                        leaveFrom="opacity-100"
-                        leaveTo="opacity-0"
-                    >
-                        <div className="fixed inset-0 bg-black bg-opacity-25" />
-                    </Transition.Child>
-
-                    <div className="fixed inset-0 overflow-y-auto">
-                        <div className="flex min-h-full items-center justify-center p-4 text-center">
-                            <Transition.Child
-                                as={Fragment}
-                                enter="ease-out duration-300"
-                                enterFrom="opacity-0 scale-95"
-                                enterTo="opacity-100 scale-100"
-                                leave="ease-in duration-200"
-                                leaveFrom="opacity-100 scale-100"
-                                leaveTo="opacity-0 scale-95"
-                            >
-                                <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                                    <Dialog.Title
-                                        as="h3"
-                                        className="text-lg font-medium leading-6 text-gray-900 flex justify-between"
-                                    >
-                                        <div>
-                                            Test Results for {selectedDate ? format(new Date(selectedDate), 'MMMM d, yyyy') : ''}
-                                        </div>
-                                        <button
-                                            type="button"
-                                            className="text-gray-400 hover:text-gray-500"
-                                            onClick={closeModal}
-                                        >
-                                            <XMarkIcon className="h-5 w-5" />
-                                        </button>
-                                    </Dialog.Title>
-
-                                    <div className="mt-4">
-                                        <div className="flex justify-between mb-4">
-                                            <div className="flex space-x-2">
-                                                <select
-                                                    value={filterType}
-                                                    onChange={(e) => setFilterType(e.target.value)}
-                                                    className="rounded-md border-gray-300 text-sm"
-                                                >
-                                                    <option value="all">All Tests</option>
-                                                    <option value="normal">Normal</option>
-                                                    <option value="abnormal">Abnormal</option>
-                                                </select>
-                                                <button
-                                                    onClick={exportTests}
-                                                    className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm leading-5 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                                                >
-                                                    <DocumentIcon className="h-4 w-4 mr-1" />
-                                                    Export
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <table className="min-w-full divide-y divide-gray-200">
-                                            <thead className="bg-gray-50">
-                                                <tr>
-                                                    <th
-                                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                                                        onClick={() => handleSort('testType')}
-                                                    >
-                                                        <div className="flex items-center">
-                                                            Test Type
-                                                            {sortField === 'testType' && (
-                                                                sortDirection === 'asc' ? 
-                                                                    <ArrowUpIcon className="ml-1 h-4 w-4" /> : 
-                                                                    <ArrowDownIcon className="ml-1 h-4 w-4" />
-                                                            )}
-                                                        </div>
-                                                    </th>
-                                                    <th
-                                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                                                        onClick={() => handleSort('testValue')}
-                                                    >
-                                                        <div className="flex items-center">
-                                                            Value
-                                                            {sortField === 'testValue' && (
-                                                                sortDirection === 'asc' ? 
-                                                                    <ArrowUpIcon className="ml-1 h-4 w-4" /> : 
-                                                                    <ArrowDownIcon className="ml-1 h-4 w-4" />
-                                                            )}
-                                                        </div>
-                                                    </th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Status
-                                                    </th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Notes
-                                                    </th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="bg-white divide-y divide-gray-200">
-                                                {selectedDateTests.length > 0 && getSortedAndFilteredTests(selectedDateTests).map(test => (
-                                                    <tr key={test.id}>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                            {test.testType}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            <span className={test.isAbnormal ? 'text-red-600 font-medium' : ''}>
-                                                                {test.testValue}
-                                                            </span>
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                            {test.isAbnormal ? (
-                                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                                                    <ExclamationCircleIcon className="mr-1 h-4 w-4" />
-                                                                    Abnormal
-                                                                </span>
-                                                            ) : (
-                                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                                    Normal
-                                                                </span>
-                                                            )}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            <input
-                                                                type="text"
-                                                                value={noteInput[test.id] || test.notes || ''}
-                                                                onChange={(e) => setNoteInput({
-                                                                    ...noteInput,
-                                                                    [test.id]: e.target.value
-                                                                })}
-                                                                placeholder="Add notes..."
-                                                                className="text-sm border-gray-300 rounded-md w-full"
-                                                            />
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+            {/* Sliding Panel */}
+            <div className={`fixed inset-0 bg-black bg-opacity-25 z-40 transition-opacity duration-300 ${isPanelOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                <div 
+                    ref={panelRef}
+                    className={`absolute top-0 right-0 w-full md:w-2/3 lg:w-1/2 h-full bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${
+                        isPanelOpen ? 'translate-x-0' : 'translate-x-full'
+                    }`}
+                >
+                    {selectedDate && (
+                        <div className="h-full flex flex-col">
+                            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                                <h2 className="text-lg font-semibold text-gray-900">
+                                    Tests for {format(new Date(selectedDate), 'MMMM d, yyyy')}
+                                </h2>
+                                <button 
+                                    onClick={closePanel}
+                                    className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
+                                >
+                                    <XMarkIcon className="h-6 w-6" />
+                                </button>
+                            </div>
+                            
+                            <div className="p-4 border-b border-gray-200 bg-gray-50">
+                                <div className="flex items-center justify-between">
+                                    <div className="text-sm text-gray-500">
+                                        {groupedTests[selectedDate].length} tests recorded
                                     </div>
-
-                                    {/* Trend Chart */}
-                                    {selectedDateTests.length > 0 && (
-                                        <div className="mt-6 border-t border-gray-200 pt-4">
-                                            <h4 className="text-md font-medium text-gray-900 mb-4">Trend Analysis</h4>
-                                            {getSortedAndFilteredTests(selectedDateTests).map(test => {
-                                                const trendData = getTestTrend(test.testType);
-                                                return trendData.length > 1 ? (
-                                                    <div key={test.id} className="mb-6">
-                                                        <h5 className="text-sm font-medium text-gray-700 mb-2">{test.testType} Trend</h5>
-                                                        <div className="h-64">
-                                                            <ResponsiveContainer width="100%" height="100%">
-                                                                <LineChart data={trendData}>
-                                                                    <CartesianGrid strokeDasharray="3 3" />
-                                                                    <XAxis 
-                                                                        dataKey="date"
-                                                                        tickFormatter={(date) => format(new Date(date), 'MMM d')}
-                                                                    />
-                                                                    <YAxis />
-                                                                    <Tooltip 
-                                                                        labelFormatter={(date) => format(new Date(date), 'MMMM d, yyyy')}
-                                                                    />
-                                                                    <Line 
-                                                                        type="monotone" 
-                                                                        dataKey="value" 
-                                                                        stroke="#4F46E5" 
-                                                                        name={test.testType}
-                                                                    />
-                                                                </LineChart>
-                                                            </ResponsiveContainer>
-                                                        </div>
+                                    <div className="flex space-x-2">
+                                        <select
+                                            value={filterType}
+                                            onChange={(e) => setFilterType(e.target.value)}
+                                            className="rounded-md border-gray-300 text-sm"
+                                        >
+                                            <option value="all">All Tests</option>
+                                            <option value="normal">Normal</option>
+                                            <option value="abnormal">Abnormal</option>
+                                        </select>
+                                        <button
+                                            onClick={() => exportTests(selectedDate)}
+                                            className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                                        >
+                                            <DocumentIcon className="h-4 w-4 mr-1" />
+                                            Export
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="flex-1 overflow-auto p-4">
+                                {/* Tests Table */}
+                                <div className="bg-white rounded-md shadow mb-6">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th
+                                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                                                    onClick={() => handleSort('testType')}
+                                                >
+                                                    <div className="flex items-center">
+                                                        Test Type
+                                                        {sortField === 'testType' && (
+                                                            sortDirection === 'asc' ? 
+                                                                <ArrowUpIcon className="ml-1 h-4 w-4" /> : 
+                                                                <ArrowDownIcon className="ml-1 h-4 w-4" />
+                                                        )}
                                                     </div>
-                                                ) : (
-                                                    <div key={test.id} className="mb-4">
-                                                        <p className="text-sm text-gray-500">Not enough data for {test.testType} trend analysis.</p>
+                                                </th>
+                                                <th
+                                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                                                    onClick={() => handleSort('testValue')}
+                                                >
+                                                    <div className="flex items-center">
+                                                        Value
+                                                        {sortField === 'testValue' && (
+                                                            sortDirection === 'asc' ? 
+                                                                <ArrowUpIcon className="ml-1 h-4 w-4" /> : 
+                                                                <ArrowDownIcon className="ml-1 h-4 w-4" />
+                                                        )}
                                                     </div>
-                                                );
-                                            })}
-                                        </div>
-                                    )}
-                                </Dialog.Panel>
-                            </Transition.Child>
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Status
+                                                </th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Notes
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                            {getSortedAndFilteredTests(groupedTests[selectedDate]).map(test => (
+                                                <tr key={test.id}>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                        {test.testType}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        <span className={test.isAbnormal ? 'text-red-600 font-medium' : ''}>
+                                                            {test.testValue}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                        {test.isAbnormal ? (
+                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                                <ExclamationCircleIcon className="mr-1 h-4 w-4" />
+                                                                Abnormal
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                                Normal
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <input
+                                                            type="text"
+                                                            value={noteInput[test.id] || test.notes || ''}
+                                                            onChange={(e) => setNoteInput({
+                                                                ...noteInput,
+                                                                [test.id]: e.target.value
+                                                            })}
+                                                            placeholder="Add notes..."
+                                                            className="text-sm border-gray-300 rounded-md w-full"
+                                                        />
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                {/* Trend Charts */}
+                                <div className="bg-white rounded-md shadow p-4">
+                                    <h4 className="text-md font-medium text-gray-900 mb-4">Trend Analysis</h4>
+                                    {getSortedAndFilteredTests(groupedTests[selectedDate]).map(test => {
+                                        const trendData = getTestTrend(test.testType);
+                                        return trendData.length > 1 ? (
+                                            <div key={test.id} className="mb-6">
+                                                <h5 className="text-sm font-medium text-gray-700 mb-2">{test.testType} Trend</h5>
+                                                <div className="h-64">
+                                                    <ResponsiveContainer width="100%" height="100%">
+                                                        <LineChart data={trendData}>
+                                                            <CartesianGrid strokeDasharray="3 3" />
+                                                            <XAxis 
+                                                                dataKey="date"
+                                                                tickFormatter={(date) => format(new Date(date), 'MMM d')}
+                                                            />
+                                                            <YAxis />
+                                                            <Tooltip 
+                                                                labelFormatter={(date) => format(new Date(date), 'MMMM d, yyyy')}
+                                                            />
+                                                            <Line 
+                                                                type="monotone" 
+                                                                dataKey="value" 
+                                                                stroke="#4F46E5" 
+                                                                name={test.testType}
+                                                            />
+                                                        </LineChart>
+                                                    </ResponsiveContainer>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div key={test.id} className="mb-4">
+                                                <p className="text-sm text-gray-500">Not enough data for {test.testType} trend analysis.</p>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </Dialog>
-            </Transition>
+                    )}
+                </div>
+            </div>
         </div>
     );
 };

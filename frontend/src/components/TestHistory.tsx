@@ -20,7 +20,49 @@ interface TestHistoryProps {
     tests: Test[];
 }
 
+// Add this interface for reference ranges
+interface ReferenceRange {
+    min: number;
+    max: number;
+    unit: string;
+}
+
+// Add reference ranges for different test types
+const TEST_REFERENCE_RANGES: { [key: string]: ReferenceRange } = {
+    'Platelets Count': {
+        min: 150,
+        max: 450,
+        unit: '×10⁹/L'
+    },
+    'Hemoglobin': {
+        min: 13.5,
+        max: 17.5,
+        unit: 'g/dL'
+    },
+    'RBC': {
+        min: 4.5,
+        max: 5.5,
+        unit: '×10¹²/L'
+    },
+    'WBC': {
+        min: 4.5,
+        max: 11.0,
+        unit: '×10⁹/L'
+    },
+    'Vitamin D': {
+        min: 30,
+        max: 100,
+        unit: 'ng/mL'
+    },
+    'Cholesterol Levels': {
+        min: 0,
+        max: 200,
+        unit: 'mg/dL'
+    }
+};
+
 const TestHistory: React.FC<TestHistoryProps> = ({ tests }) => {
+    console.log('tests', tests);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [sortField, setSortField] = useState<'testType' | 'testValue'>('testType');
@@ -246,15 +288,6 @@ const TestHistory: React.FC<TestHistoryProps> = ({ tests }) => {
                                         {groupedTests[selectedDate].length} tests recorded
                                     </div>
                                     <div className="flex space-x-2">
-                                        <select
-                                            value={filterType}
-                                            onChange={(e) => setFilterType(e.target.value)}
-                                            className="rounded-md border-gray-300 text-sm"
-                                        >
-                                            <option value="all">All Tests</option>
-                                            <option value="normal">Normal</option>
-                                            <option value="abnormal">Abnormal</option>
-                                        </select>
                                         <button
                                             onClick={() => exportTests(selectedDate)}
                                             className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm rounded-md text-gray-700 bg-white hover:bg-gray-50"
@@ -299,10 +332,7 @@ const TestHistory: React.FC<TestHistoryProps> = ({ tests }) => {
                                                     </div>
                                                 </th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Status
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Notes
+                                                    Reference Range
                                                 </th>
                                             </tr>
                                         </thead>
@@ -314,32 +344,18 @@ const TestHistory: React.FC<TestHistoryProps> = ({ tests }) => {
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                         <span className={test.isAbnormal ? 'text-red-600 font-medium' : ''}>
-                                                            {test.testValue}
+                                                            {test.testValue} {TEST_REFERENCE_RANGES[test.testType]?.unit}
                                                         </span>
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                        {test.isAbnormal ? (
-                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                                                <ExclamationCircleIcon className="mr-1 h-4 w-4" />
-                                                                Abnormal
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {TEST_REFERENCE_RANGES[test.testType] ? (
+                                                            <span>
+                                                                {TEST_REFERENCE_RANGES[test.testType].min} - {TEST_REFERENCE_RANGES[test.testType].max}{' '}
+                                                                {TEST_REFERENCE_RANGES[test.testType].unit}
                                                             </span>
                                                         ) : (
-                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                                Normal
-                                                            </span>
+                                                            <span className="text-gray-400">Not available</span>
                                                         )}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        <input
-                                                            type="text"
-                                                            value={noteInput[test.id] || test.notes || ''}
-                                                            onChange={(e) => setNoteInput({
-                                                                ...noteInput,
-                                                                [test.id]: e.target.value
-                                                            })}
-                                                            placeholder="Add notes..."
-                                                            className="text-sm border-gray-300 rounded-md w-full"
-                                                        />
                                                     </td>
                                                 </tr>
                                             ))}

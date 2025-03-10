@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsString, IsDateString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString, IsDateString, IsBoolean } from 'class-validator';
 
 export class CreateMedicalFormDto {
     @IsNotEmpty()
@@ -16,4 +16,8 @@ export class CreateMedicalFormDto {
     @IsNotEmpty()
     @IsNumber()
     userId: number;
+
+    @IsNotEmpty()
+    @IsBoolean()
+    isAbnormal: boolean;
 } 

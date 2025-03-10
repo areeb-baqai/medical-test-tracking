@@ -9,11 +9,14 @@ export class MedicalForm {
     @Column()
     testType: string;
 
-    @Column()
+    @Column('float')
     testValue: number;
 
     @Column()
     testDate: string;
+
+    @Column({ default: false })
+    isAbnormal: boolean;
 
     @Column()
     userId: number;

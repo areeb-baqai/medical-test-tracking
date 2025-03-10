@@ -3,22 +3,17 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line, L
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import TestHistory from './TestHistory';
+import { CBC_PARAMETERS } from '../constants/testParameters';
 
 const Dashboard: React.FC = () => {
     const { user } = useAuth();
     const [medicalData, setMedicalData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [testType, setTestType] = useState('');
+    const [selectedTestType, setSelectedTestType] = useState<string>('all');
     const [filteredData, setFilteredData] = useState<any[]>([]);
 
-    const testTypes = [
-        'Platelets Count',
-        'Hemoglobin',
-        'RBC',
-        'WBC',
-        'Vitamin D',
-        'Cholesterol Levels',
-    ];
+    // Get unique test types from CBC_PARAMETERS
+    const testTypes = ['all', ...Object.keys(CBC_PARAMETERS)].sort();
 
     // Fetch user data on component mount
     useEffect(() => {
@@ -45,19 +40,30 @@ const Dashboard: React.FC = () => {
         fetchMedicalData();
     }, [user?.id]);
 
-    // Apply filtering when test type changes
-    useEffect(() => {
-        const filtered = medicalData.filter((item) => {
-            return (!testType || item.testType === testType);
-        });
-        setFilteredData(filtered);
-    }, [testType, medicalData]);
+    // Filter tests based on selected type
+    const filteredTests = medicalData.filter(test => 
+        selectedTestType === 'all' || test.testType === selectedTestType
+    );
+
+    // Update stats calculation
+    const calculateStats = (tests: any[]) => {
+        return {
+            totalTests: tests.length,
+            abnormalTests: tests.filter(test => test.isAbnormal).length,
+            normalTests: tests.filter(test => !test.isAbnormal).length
+        };
+    };
+
+    // Update filtered stats based on test type
+    const stats = selectedTestType === 'all' 
+        ? calculateStats(medicalData)
+        : calculateStats(filteredTests);
 
     // Prepare chart data based on filter selection
     const prepareChartData = () => {
-        if (!testType) {
+        if (selectedTestType === 'all') {
             // For "All Test Types" - group data by test date, avoiding duplicates
-            return filteredData.reduce((acc: any[], item) => {
+            return medicalData.reduce((acc: any[], item) => {
                 const existingDate = acc.find(d => d.name === item.testDate);
                 if (existingDate) {
                     existingDate[item.testType] = item.testValue;
@@ -75,8 +81,7 @@ const Dashboard: React.FC = () => {
             // Deduplicate entries with the same date by keeping the last one
             const uniqueDates = new Map();
             
-            filteredData
-                .filter(item => item.testType === testType)
+            filteredTests
                 .forEach(item => {
                     uniqueDates.set(item.testDate, item);
                 });
@@ -95,7 +100,7 @@ const Dashboard: React.FC = () => {
     const chartData = prepareChartData();
     
     // Get unique test types for the legend (only used when showing all test types)
-    const uniqueTestTypes = Array.from(new Set(filteredData.map(item => item.testType)));
+    const uniqueTestTypes = Array.from(new Set(medicalData.map(item => item.testType)));
 
     if (loading) {
         return <div className="flex justify-center items-center h-screen">
@@ -111,55 +116,6 @@ const Dashboard: React.FC = () => {
                 <p className="text-gray-600 mt-1">Here's an overview of your health metrics</p>
             </div>
 
-            {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                    <div className="flex items-center">
-                        <div className="p-3 bg-indigo-50 rounded-lg">
-                            <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                            </svg>
-                        </div>
-                        <div className="ml-4">
-                            <h3 className="text-sm font-medium text-gray-500">Total Tests</h3>
-                            <p className="text-2xl font-semibold text-gray-900">{filteredData.length}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                    <div className="flex items-center">
-                        <div className="p-3 bg-green-50 rounded-lg">
-                            <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                            </svg>
-                        </div>
-                        <div className="ml-4">
-                            <h3 className="text-sm font-medium text-gray-500">Latest Reading</h3>
-                            <p className="text-2xl font-semibold text-gray-900">
-                                {filteredData[0]?.testValue || 'N/A'}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                    <div className="flex items-center">
-                        <div className="p-3 bg-purple-50 rounded-lg">
-                            <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <div className="ml-4">
-                            <h3 className="text-sm font-medium text-gray-500">Last Test Date</h3>
-                            <p className="text-2xl font-semibold text-gray-900">
-                                {filteredData[0]?.testDate || 'N/A'}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             {/* Test Type Filter */}
             <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
                 <div className="flex items-center justify-between mb-4">
@@ -167,15 +123,52 @@ const Dashboard: React.FC = () => {
                 </div>
                 <div className="max-w-xs">
                     <select
-                        value={testType}
-                        onChange={(e) => setTestType(e.target.value)}
+                        value={selectedTestType}
+                        onChange={(e) => setSelectedTestType(e.target.value)}
                         className="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
                     >
-                        <option value="">All Test Types</option>
-                        {testTypes.map((type) => (
-                            <option key={type} value={type}>{type}</option>
+                        {testTypes.map(type => (
+                            <option key={type} value={type}>
+                                {type === 'all' ? 'All Tests' : type}
+                            </option>
                         ))}
                     </select>
+                </div>
+            </div>
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <div className="flex items-center">
+                        <div className="ml-4">
+                            <h3 className="text-sm font-medium text-gray-500">Total Tests</h3>
+                            <p className="text-2xl font-semibold text-gray-900">
+                                {stats.totalTests}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <div className="flex items-center">
+                        <div className="ml-4">
+                            <h3 className="text-sm font-medium text-gray-500">Normal Results</h3>
+                            <p className="text-2xl font-semibold text-green-600">
+                                {stats.normalTests}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <div className="flex items-center">
+                        <div className="ml-4">
+                            <h3 className="text-sm font-medium text-gray-500">Abnormal Results</h3>
+                            <p className="text-2xl font-semibold text-red-600">
+                                {stats.abnormalTests}
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -191,9 +184,7 @@ const Dashboard: React.FC = () => {
                             <YAxis />
                             <Tooltip />
                             <Legend />
-                            {testType ? (
-                                <Bar dataKey="value" fill="#4F46E5" name={testType} />
-                            ) : (
+                            {selectedTestType === 'all' ? (
                                 uniqueTestTypes.map((type, index) => (
                                     <Bar 
                                         key={type} 
@@ -202,6 +193,8 @@ const Dashboard: React.FC = () => {
                                         name={type}
                                     />
                                 ))
+                            ) : (
+                                <Bar dataKey="value" fill="#4F46E5" name={selectedTestType} />
                             )}
                         </BarChart>
                     </div>
@@ -217,14 +210,7 @@ const Dashboard: React.FC = () => {
                             <YAxis />
                             <Tooltip />
                             <Legend />
-                            {testType ? (
-                                <Line
-                                    type="monotone"
-                                    dataKey="value"
-                                    stroke="#4F46E5"
-                                    name={testType}
-                                />
-                            ) : (
+                            {selectedTestType === 'all' ? (
                                 uniqueTestTypes.map((type, index) => (
                                     <Line
                                         key={type}
@@ -234,6 +220,13 @@ const Dashboard: React.FC = () => {
                                         name={type}
                                     />
                                 ))
+                            ) : (
+                                <Line
+                                    type="monotone"
+                                    dataKey="value"
+                                    stroke="#4F46E5"
+                                    name={selectedTestType}
+                                />
                             )}
                         </LineChart>
                     </div>
@@ -241,7 +234,7 @@ const Dashboard: React.FC = () => {
             </div>
 
             <div className="mt-8">
-                <TestHistory tests={filteredData} />
+                <TestHistory tests={filteredTests} />
             </div>
         </div>
     );

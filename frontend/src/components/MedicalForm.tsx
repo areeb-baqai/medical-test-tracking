@@ -5,56 +5,83 @@ import { useNavigate } from 'react-router-dom';
 import { useTestStats } from '../context/TestStatsContext';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { CBC_PARAMETERS } from '../constants/testParameters';
+
+interface CBCTestData {
+    testDate: string;
+    [key: string]: string | number;
+}
 
 const MedicalForm: React.FC = () => {
-    const [testType, setTestType] = useState('');
-    const [testValue, setTestValue] = useState('');
-    const [testDate, setTestDate] = useState('');
+    const [testData, setTestData] = useState<CBCTestData>({
+        testDate: new Date().toISOString().split('T')[0]
+    });
     const [error, setError] = useState('');
-    const { user } = useAuth();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const { user } = useAuth();
     const navigate = useNavigate();
     const { refreshStats } = useTestStats();
 
-    const testTypes = [
-        'Platelets Count',
-        'Hemoglobin',
-        'RBC',
-        'WBC',
-        'Vitamin D',
-        'Cholesterol Levels',
-    ];
+    const handleInputChange = (parameter: string, value: string) => {
+        setTestData(prev => ({
+            ...prev,
+            [parameter]: value
+        }));
+    };
+
+    const validateTestValue = (value: number): boolean => {
+        return !isNaN(value) && value >= 0; // Only check if it's a non-negative number
+    };
+
+    const isOutsideRange = (value: number, min: number, max: number): boolean => {
+        return value < min || value > max;
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setIsSubmitting(true);
 
-        if (!testType || !testValue || !testDate) {
-            setError('All fields are required.');
-            setIsSubmitting(false);
-            return;
-        }
-
-        if (parseFloat(testValue) < 0) {
-            setError('Test value must be a non-negative number.');
-            setIsSubmitting(false);
-            return;
-        }
-
         try {
-            await api.post('/medical-form', {
-                testType,
-                testValue,
-                testDate,
-                userId: user?.id
-            });
+            const filledEntries = Object.entries(testData)
+                .filter(([key, value]) => key !== 'testDate' && value !== '');
+
+            // Validate non-negative numbers for filled fields
+            const invalidParameters = filledEntries
+                .filter(([key]) => CBC_PARAMETERS[key])
+                .filter(([_, value]) => {
+                    const numValue = parseFloat(value as string);
+                    return !validateTestValue(numValue);
+                });
+
+            if (invalidParameters.length > 0) {
+                setError(`Invalid values (must be non-negative numbers) for: ${invalidParameters.map(([key]) => key).join(', ')}`);
+                setIsSubmitting(false);
+                return;
+            }
+
+            await Promise.all(
+                filledEntries.map(([testType, testValue]) => {
+                    const numValue = parseFloat(testValue as string);
+                    const { min, max } = CBC_PARAMETERS[testType];
+                    const isAbnormal = isOutsideRange(numValue, min, max);
+                    
+                    return api.post('/medical-form', {
+                        testType,
+                        testValue: numValue,
+                        testDate: testData.testDate,
+                        userId: user?.id,
+                        isAbnormal
+                    });
+                })
+            );
+
             await refreshStats();
-            toast.success('Test record added successfully!');
+            toast.success('Test results recorded successfully!');
             navigate('/');
         } catch (err) {
-            console.error('Error submitting medical form:', err);
-            setError('Submission failed. Please try again.');
+            console.error('Error submitting test results:', err);
+            setError('Failed to submit test results. Please try again.');
         } finally {
             setIsSubmitting(false);
         }
@@ -62,70 +89,60 @@ const MedicalForm: React.FC = () => {
 
     return (
         <div className="flex-1 overflow-auto bg-gray-50 p-6">
-            <div className="max-w-2xl mx-auto">
-                {/* Header Section */}
-                <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-gray-900">Record Medical Test</h1>
-                    <p className="mt-1 text-gray-600">Enter your medical test details below</p>
-                </div>
+            <div className="max-w-4xl mx-auto">
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div className="p-6 border-b border-gray-200">
+                        <h2 className="text-2xl font-bold text-gray-900">Record CBC Test Results</h2>
+                        <p className="mt-1 text-sm text-gray-600">
+                            Enter Complete Blood Count (CBC) test parameters below
+                        </p>
+                    </div>
 
-                {/* Main Form Card */}
-                <div className="bg-white rounded-xl shadow-sm">
-                    <div className="p-6">
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            {/* Test Type Selection */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Test Type
-                                </label>
-                                <select
-                                    value={testType}
-                                    onChange={(e) => setTestType(e.target.value)}
-                                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                    required
-                                >
-                                    <option value="">Select a test type</option>
-                                    {testTypes.map((type) => (
-                                        <option key={type} value={type}>
-                                            {type}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {/* Test Value Input */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Test Value
-                                </label>
-                                <div className="relative rounded-lg shadow-sm">
+                    <form onSubmit={handleSubmit} className="p-6">
+                        <div className="space-y-6">
+                            {/* Test Date */}
+                            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Test Date</label>
                                     <input
-                                        type="number"
-                                        value={testValue}
-                                        onChange={(e) => setTestValue(e.target.value)}
-                                        className="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+                                        type="date"
+                                        value={testData.testDate}
+                                        onChange={(e) => handleInputChange('testDate', e.target.value)}
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                         required
                                     />
                                 </div>
                             </div>
 
-                            {/* Test Date Input */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Test Date
-                                </label>
-                                <input
-                                    type="date"
-                                    value={testDate}
-                                    onChange={(e) => setTestDate(e.target.value)}
-                                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                    required
-                                />
+                            {/* CBC Parameters */}
+                            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                                {Object.entries(CBC_PARAMETERS).map(([parameter, { unit, min, max }]) => (
+                                    <div key={parameter}>
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            {parameter} ({unit})
+                                        </label>
+                                        <div className="mt-1 relative rounded-md shadow-sm">
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                value={testData[parameter] || ''}
+                                                onChange={(e) => handleInputChange(parameter, e.target.value)}
+                                                className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                                placeholder={`${min}-${max}`}
+                                            />
+                                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                <span className="text-gray-500 sm:text-sm">{unit}</span>
+                                            </div>
+                                        </div>
+                                        <p className="mt-1 text-xs text-gray-500">
+                                            Normal range: {min}-{max} {unit}
+                                        </p>
+                                    </div>
+                                ))}
                             </div>
 
-                            {/* Error Message */}
                             {error && (
-                                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+                                <div className="rounded-md bg-red-50 p-4">
                                     <div className="flex">
                                         <div className="flex-shrink-0">
                                             <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -139,18 +156,16 @@ const MedicalForm: React.FC = () => {
                                 </div>
                             )}
 
-                            {/* Submit Button */}
-                            <div className="flex items-center justify-end">
+                            <div className="flex justify-end">
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
                                     className={`
-                                        inline-flex items-center px-6 py-3 border border-transparent 
-                                        text-base font-medium rounded-lg shadow-sm text-white 
-                                        ${isSubmitting 
-                                            ? 'bg-indigo-400 cursor-not-allowed' 
-                                            : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
-                                        }
+                                        inline-flex items-center px-6 py-3 border border-transparent text-base 
+                                        font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 
+                                        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+                                        disabled:bg-blue-400 disabled:cursor-not-allowed
+                                        transition-colors duration-200
                                     `}
                                 >
                                     {isSubmitting ? (
@@ -161,52 +176,11 @@ const MedicalForm: React.FC = () => {
                                             </svg>
                                             Recording...
                                         </>
-                                    ) : (
-                                        'Record Test Data'
-                                    )}
+                                    ) : 'Record CBC Results'}
                                 </button>
                             </div>
-                        </form>
-                    </div>
-                </div>
-
-                {/* Information Cards */}
-                <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-white rounded-xl shadow-sm p-6">
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <div className="p-3 bg-blue-50 rounded-lg">
-                                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <div className="ml-4">
-                                <h3 className="text-sm font-medium text-gray-900">Need Help?</h3>
-                                <p className="mt-1 text-sm text-gray-500">
-                                    Contact your healthcare provider for guidance on test values and interpretation.
-                                </p>
-                            </div>
                         </div>
-                    </div>
-
-                    <div className="bg-white rounded-xl shadow-sm p-6">
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <div className="p-3 bg-green-50 rounded-lg">
-                                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <div className="ml-4">
-                                <h3 className="text-sm font-medium text-gray-900">Data Security</h3>
-                                <p className="mt-1 text-sm text-gray-500">
-                                    Your medical data is encrypted and securely stored.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+                    </form>
                 </div>
             </div>
         </div>

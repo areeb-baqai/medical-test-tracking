@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ChevronRightIcon, DocumentIcon, ExclamationCircleIcon, ArrowUpIcon, ArrowDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { CBC_PARAMETERS, TestParameter } from '../constants/testParameters';
 
 interface Test {
     id: number;
@@ -26,40 +27,6 @@ interface ReferenceRange {
     max: number;
     unit: string;
 }
-
-// Add reference ranges for different test types
-const TEST_REFERENCE_RANGES: { [key: string]: ReferenceRange } = {
-    'Platelets Count': {
-        min: 150,
-        max: 450,
-        unit: '×10⁹/L'
-    },
-    'Hemoglobin': {
-        min: 13.5,
-        max: 17.5,
-        unit: 'g/dL'
-    },
-    'RBC': {
-        min: 4.5,
-        max: 5.5,
-        unit: '×10¹²/L'
-    },
-    'WBC': {
-        min: 4.5,
-        max: 11.0,
-        unit: '×10⁹/L'
-    },
-    'Vitamin D': {
-        min: 30,
-        max: 100,
-        unit: 'ng/mL'
-    },
-    'Cholesterol Levels': {
-        min: 0,
-        max: 200,
-        unit: 'mg/dL'
-    }
-};
 
 const TestHistory: React.FC<TestHistoryProps> = ({ tests }) => {
     console.log('tests', tests);
@@ -129,13 +96,11 @@ const TestHistory: React.FC<TestHistoryProps> = ({ tests }) => {
     const exportTests = (date: string) => {
         const testsToExport = groupedTests[date];
         const csv = [
-            ['Test Type', 'Value', 'Date', 'Notes', 'Status'].join(','),
+            ['Test Type', 'Value', 'Date'].join(','),
             ...testsToExport.map(test => [
                 test.testType,
                 test.testValue,
                 test.testDate,
-                test.notes || '',
-                test.isAbnormal ? 'Abnormal' : 'Normal'
             ].join(','))
         ].join('\n');
 
@@ -344,14 +309,14 @@ const TestHistory: React.FC<TestHistoryProps> = ({ tests }) => {
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                         <span className={test.isAbnormal ? 'text-red-600 font-medium' : ''}>
-                                                            {test.testValue} {TEST_REFERENCE_RANGES[test.testType]?.unit}
+                                                            {test.testValue} {CBC_PARAMETERS[test.testType]?.unit || ''}
                                                         </span>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                        {TEST_REFERENCE_RANGES[test.testType] ? (
+                                                        {CBC_PARAMETERS[test.testType] ? (
                                                             <span>
-                                                                {TEST_REFERENCE_RANGES[test.testType].min} - {TEST_REFERENCE_RANGES[test.testType].max}{' '}
-                                                                {TEST_REFERENCE_RANGES[test.testType].unit}
+                                                                {CBC_PARAMETERS[test.testType].min} - {CBC_PARAMETERS[test.testType].max}{' '}
+                                                                {CBC_PARAMETERS[test.testType].unit}
                                                             </span>
                                                         ) : (
                                                             <span className="text-gray-400">Not available</span>
@@ -361,44 +326,6 @@ const TestHistory: React.FC<TestHistoryProps> = ({ tests }) => {
                                             ))}
                                         </tbody>
                                     </table>
-                                </div>
-                                
-                                {/* Trend Charts */}
-                                <div className="bg-white rounded-md shadow p-4">
-                                    <h4 className="text-md font-medium text-gray-900 mb-4">Trend Analysis</h4>
-                                    {getSortedAndFilteredTests(groupedTests[selectedDate]).map(test => {
-                                        const trendData = getTestTrend(test.testType);
-                                        return trendData.length > 1 ? (
-                                            <div key={test.id} className="mb-6">
-                                                <h5 className="text-sm font-medium text-gray-700 mb-2">{test.testType} Trend</h5>
-                                                <div className="h-64">
-                                                    <ResponsiveContainer width="100%" height="100%">
-                                                        <LineChart data={trendData}>
-                                                            <CartesianGrid strokeDasharray="3 3" />
-                                                            <XAxis 
-                                                                dataKey="date"
-                                                                tickFormatter={(date) => format(new Date(date), 'MMM d')}
-                                                            />
-                                                            <YAxis />
-                                                            <Tooltip 
-                                                                labelFormatter={(date) => format(new Date(date), 'MMMM d, yyyy')}
-                                                            />
-                                                            <Line 
-                                                                type="monotone" 
-                                                                dataKey="value" 
-                                                                stroke="#4F46E5" 
-                                                                name={test.testType}
-                                                            />
-                                                        </LineChart>
-                                                    </ResponsiveContainer>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div key={test.id} className="mb-4">
-                                                <p className="text-sm text-gray-500">Not enough data for {test.testType} trend analysis.</p>
-                                            </div>
-                                        );
-                                    })}
                                 </div>
                             </div>
                         </div>

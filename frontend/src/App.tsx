@@ -60,84 +60,48 @@ const Header: React.FC = () => {
     );
 };
 
-// Layout component for authenticated pages
-const PrivateLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// Root route component
+const RootRedirect: React.FC = () => {
+    const { user } = useAuth();
+    return user ? <Navigate to="/dashboard" replace /> : <Navigate to="/signin" replace />;
+};
+
+// Private route wrapper
+const PrivateRoute: React.FC<{ element: React.ReactElement }> = ({ element }) => {
+    const { user } = useAuth();
+    const location = useLocation();
+
+    if (!user) {
+        return <Navigate to="/signin" state={{ from: location }} replace />;
+    }
+
     return (
-        <div className="flex min-h-screen bg-gray-50">
+        <div className="flex min-h-screen">
             <SideMenu />
             <div className="flex-1 flex flex-col">
                 <Header />
-                <main className="flex-1 p-6">
-                    {children}
-                </main>
+                {element}
                 <Footer />
             </div>
         </div>
     );
 };
 
-// Protected Route component
-const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { isAuthenticated, loading } = useAuth();
-    const location = useLocation();
-
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-            </div>
-        );
-    }
-
-    if (!isAuthenticated) {
-        return <Navigate to="/signin" state={{ from: location }} replace />;
-    }
-
-    return <PrivateLayout>{children}</PrivateLayout>;
-};
-
-// Public Route component
-const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { isAuthenticated } = useAuth();
-    
-    if (isAuthenticated) {
-        return <Navigate to="/" replace />;
-    }
-
-    return <>{children}</>;
-};
-
+// AppContent component
 const AppContent: React.FC = () => {
     return (
         <Routes>
-            {/* Public Routes - No header/footer */}
-            <Route path="/signin" element={
-                <PublicRoute>
-                    <SignIn />
-                </PublicRoute>
-            } />
-            <Route path="/signup" element={
-                <PublicRoute>
-                    <SignUp />
-                </PublicRoute>
-            } />
+            {/* Public routes */}
+            <Route path="/signin" element={<SignIn />} />
+            <Route path="/signup" element={<SignUp />} />
+            
+            {/* Root route redirect */}
+            <Route path="/" element={<RootRedirect />} />
 
-            {/* Private Routes - With header/footer */}
-            <Route path="/" element={
-                <PrivateRoute>
-                    <Dashboard />
-                </PrivateRoute>
-            } />
-            <Route path="/medical-form" element={
-                <PrivateRoute>
-                    <MedicalForm />
-                </PrivateRoute>
-            } />
-            <Route path="/profile" element={
-                <PrivateRoute>
-                    <ProfileSettings />
-                </PrivateRoute>
-            } />
+            {/* Private routes */}
+            <Route path="/dashboard" element={<PrivateRoute element={<Dashboard />} />} />
+            <Route path="/medical-form" element={<PrivateRoute element={<MedicalForm />} />} />
+            <Route path="/profile" element={<PrivateRoute element={<ProfileSettings />} />} />
 
             {/* Catch all route */}
             <Route path="*" element={<Navigate to="/" replace />} />

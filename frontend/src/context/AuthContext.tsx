@@ -29,8 +29,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Helper functions for localStorage
 const saveUserToStorage = (user: User) => {
-    localStorage.setItem('user', JSON.stringify(user));
-    logAuth('User saved to storage:', user.id);
+    if (user && user.id && user.email) {
+        localStorage.setItem('user', JSON.stringify(user));
+        logAuth('User saved to storage:', user.id);
+    }
 };
 
 const getUserFromStorage = (): User | null => {

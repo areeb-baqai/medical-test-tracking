@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosRequestConfig, AxiosInstance } from 'axios';
 
-const API_URL = 'http://localhost:3000';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
 // Create axios instance with defaults
 const axiosInstance: AxiosInstance = axios.create({

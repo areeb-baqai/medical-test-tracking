@@ -27,27 +27,50 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Add a type guard to validate User object
+const isValidUser = (user: any): user is User => {
+    return (
+        user &&
+        typeof user === 'object' &&
+        typeof user.id === 'number' &&
+        typeof user.email === 'string' &&
+        typeof user.firstName === 'string' &&
+        typeof user.lastName === 'string'
+    );
+};
+
 // Helper functions for localStorage
 const saveUserToStorage = (user: User) => {
-    if (user && user.id && user.email) {
+    if (isValidUser(user)) {
         localStorage.setItem('user', JSON.stringify(user));
         logAuth('User saved to storage:', user.id);
+    } else {
+        logAuth('Attempted to save invalid user data');
+        localStorage.removeItem('user');
     }
 };
 
 const getUserFromStorage = (): User | null => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-        try {
-            const user = JSON.parse(userData);
-            logAuth('User loaded from storage:', user.id);
-            return user;
-        } catch (e) {
-            console.error('Failed to parse user data from localStorage');
+    try {
+        const userData = localStorage.getItem('user');
+        if (!userData) return null;
+
+        const parsedUser = JSON.parse(userData);
+        
+        // Validate the parsed user data
+        if (!isValidUser(parsedUser)) {
+            logAuth('Invalid user data in storage, clearing...');
+            localStorage.removeItem('user');
             return null;
         }
+
+        logAuth('Valid user loaded from storage:', parsedUser.id);
+        return parsedUser;
+    } catch (e) {
+        logAuth('Error parsing user data from storage, clearing...');
+        localStorage.removeItem('user');
+        return null;
     }
-    return null;
 };
 
 const clearUserFromStorage = () => {

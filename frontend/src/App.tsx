@@ -10,7 +10,7 @@ import ProfileSettings from './components/ProfileSettings';
 import './index.css';
 import { TestStatsProvider } from './context/TestStatsContext';
 import { ToastContainer } from 'react-toastify';
-
+import Footer from './components/Footer';
 // Header component for private routes
 const Header: React.FC = () => {
     const { user, logout } = useAuth();
@@ -57,17 +57,6 @@ const Header: React.FC = () => {
                 </div>
             </div>
         </header>
-    );
-};
-
-// Footer component for private routes
-const Footer: React.FC = () => {
-    return (
-        <footer className="bg-white border-t border-gray-200 py-4">
-            <div className="container mx-auto px-4 text-center text-gray-600 text-sm">
-                <p>© 2024 TibbTrack. All rights reserved.</p>
-            </div>
-        </footer>
     );
 };
 

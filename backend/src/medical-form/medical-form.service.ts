@@ -11,9 +11,15 @@ export class MedicalFormService {
         private medicalFormRepository: Repository<MedicalForm>,
     ) {}
 
-    async create(createMedicalFormDto: CreateMedicalFormDto): Promise<MedicalForm> {
-        const medicalForm = this.medicalFormRepository.create(createMedicalFormDto);
-        return await this.medicalFormRepository.save(medicalForm);
+    async create(data: {
+        testType: string;
+        testValue: number;
+        testDate: string;
+        userId: number;
+        isAbnormal: boolean;
+    }): Promise<MedicalForm> {
+        const medicalForm = this.medicalFormRepository.create(data);
+        return this.medicalFormRepository.save(medicalForm);
     }
 
     async findAll(id: number): Promise<MedicalForm[]> {

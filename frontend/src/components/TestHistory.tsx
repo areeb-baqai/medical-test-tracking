@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ChevronRightIcon, DocumentIcon, ExclamationCircleIcon, ArrowUpIcon, ArrowDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { CBC_PARAMETERS, TestParameter } from '../constants/testParameters';
 
 interface Test {
     id: number;
@@ -20,7 +21,15 @@ interface TestHistoryProps {
     tests: Test[];
 }
 
+// Add this interface for reference ranges
+interface ReferenceRange {
+    min: number;
+    max: number;
+    unit: string;
+}
+
 const TestHistory: React.FC<TestHistoryProps> = ({ tests }) => {
+    console.log('tests', tests);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [sortField, setSortField] = useState<'testType' | 'testValue'>('testType');
@@ -87,13 +96,11 @@ const TestHistory: React.FC<TestHistoryProps> = ({ tests }) => {
     const exportTests = (date: string) => {
         const testsToExport = groupedTests[date];
         const csv = [
-            ['Test Type', 'Value', 'Date', 'Notes', 'Status'].join(','),
+            ['Test Type', 'Value', 'Date'].join(','),
             ...testsToExport.map(test => [
                 test.testType,
                 test.testValue,
                 test.testDate,
-                test.notes || '',
-                test.isAbnormal ? 'Abnormal' : 'Normal'
             ].join(','))
         ].join('\n');
 
@@ -246,15 +253,6 @@ const TestHistory: React.FC<TestHistoryProps> = ({ tests }) => {
                                         {groupedTests[selectedDate].length} tests recorded
                                     </div>
                                     <div className="flex space-x-2">
-                                        <select
-                                            value={filterType}
-                                            onChange={(e) => setFilterType(e.target.value)}
-                                            className="rounded-md border-gray-300 text-sm"
-                                        >
-                                            <option value="all">All Tests</option>
-                                            <option value="normal">Normal</option>
-                                            <option value="abnormal">Abnormal</option>
-                                        </select>
                                         <button
                                             onClick={() => exportTests(selectedDate)}
                                             className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm rounded-md text-gray-700 bg-white hover:bg-gray-50"
@@ -299,10 +297,7 @@ const TestHistory: React.FC<TestHistoryProps> = ({ tests }) => {
                                                     </div>
                                                 </th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Status
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Notes
+                                                    Reference Range
                                                 </th>
                                             </tr>
                                         </thead>
@@ -314,75 +309,23 @@ const TestHistory: React.FC<TestHistoryProps> = ({ tests }) => {
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                         <span className={test.isAbnormal ? 'text-red-600 font-medium' : ''}>
-                                                            {test.testValue}
+                                                            {test.testValue} {CBC_PARAMETERS[test.testType]?.unit || ''}
                                                         </span>
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                        {test.isAbnormal ? (
-                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                                                <ExclamationCircleIcon className="mr-1 h-4 w-4" />
-                                                                Abnormal
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {CBC_PARAMETERS[test.testType] ? (
+                                                            <span>
+                                                                {CBC_PARAMETERS[test.testType].min} - {CBC_PARAMETERS[test.testType].max}{' '}
+                                                                {CBC_PARAMETERS[test.testType].unit}
                                                             </span>
                                                         ) : (
-                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                                Normal
-                                                            </span>
+                                                            <span className="text-gray-400">Not available</span>
                                                         )}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        <input
-                                                            type="text"
-                                                            value={noteInput[test.id] || test.notes || ''}
-                                                            onChange={(e) => setNoteInput({
-                                                                ...noteInput,
-                                                                [test.id]: e.target.value
-                                                            })}
-                                                            placeholder="Add notes..."
-                                                            className="text-sm border-gray-300 rounded-md w-full"
-                                                        />
                                                     </td>
                                                 </tr>
                                             ))}
                                         </tbody>
                                     </table>
-                                </div>
-                                
-                                {/* Trend Charts */}
-                                <div className="bg-white rounded-md shadow p-4">
-                                    <h4 className="text-md font-medium text-gray-900 mb-4">Trend Analysis</h4>
-                                    {getSortedAndFilteredTests(groupedTests[selectedDate]).map(test => {
-                                        const trendData = getTestTrend(test.testType);
-                                        return trendData.length > 1 ? (
-                                            <div key={test.id} className="mb-6">
-                                                <h5 className="text-sm font-medium text-gray-700 mb-2">{test.testType} Trend</h5>
-                                                <div className="h-64">
-                                                    <ResponsiveContainer width="100%" height="100%">
-                                                        <LineChart data={trendData}>
-                                                            <CartesianGrid strokeDasharray="3 3" />
-                                                            <XAxis 
-                                                                dataKey="date"
-                                                                tickFormatter={(date) => format(new Date(date), 'MMM d')}
-                                                            />
-                                                            <YAxis />
-                                                            <Tooltip 
-                                                                labelFormatter={(date) => format(new Date(date), 'MMMM d, yyyy')}
-                                                            />
-                                                            <Line 
-                                                                type="monotone" 
-                                                                dataKey="value" 
-                                                                stroke="#4F46E5" 
-                                                                name={test.testType}
-                                                            />
-                                                        </LineChart>
-                                                    </ResponsiveContainer>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div key={test.id} className="mb-4">
-                                                <p className="text-sm text-gray-500">Not enough data for {test.testType} trend analysis.</p>
-                                            </div>
-                                        );
-                                    })}
                                 </div>
                             </div>
                         </div>

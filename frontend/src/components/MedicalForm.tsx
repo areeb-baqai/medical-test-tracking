@@ -5,208 +5,295 @@ import { useNavigate } from 'react-router-dom';
 import { useTestStats } from '../context/TestStatsContext';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { CBC_PARAMETERS } from '../constants/testParameters';
+import CSVUpload from './CSVUpload';
+
+interface CBCTestData {
+    testDate: string;
+    [key: string]: string | number;
+}
+
+interface TestField {
+    testType: string;
+    value: string;
+}
+
+// Add a default parameter structure
+const DEFAULT_TEST_PARAMS = {
+    unit: 'units',
+    min: 0,
+    max: 100
+};
+
+// Add at the top of the file
+const STORED_TESTS_KEY = 'tibbtrack_test_parameters';
+
+// Initialize CBC_PARAMETERS with stored data
+const getStoredParameters = () => {
+    const stored = localStorage.getItem(STORED_TESTS_KEY);
+    return stored ? { ...CBC_PARAMETERS, ...JSON.parse(stored) } : CBC_PARAMETERS;
+};
 
 const MedicalForm: React.FC = () => {
-    const [testType, setTestType] = useState('');
-    const [testValue, setTestValue] = useState('');
-    const [testDate, setTestDate] = useState('');
+    const [testData, setTestData] = useState<CBCTestData>({
+        testDate: new Date().toISOString().split('T')[0]
+    });
+    const [selectedFields, setSelectedFields] = useState<TestField[]>([]);
+    const [selectedTest, setSelectedTest] = useState<string>('');
     const [error, setError] = useState('');
-    const { user } = useAuth();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const { user } = useAuth();
     const navigate = useNavigate();
     const { refreshStats } = useTestStats();
+    const [testParameters, setTestParameters] = useState(() => getStoredParameters());
+    const [availableTestTypes, setAvailableTestTypes] = useState<string[]>(() => 
+        Object.keys(testParameters)
+    );
 
-    const testTypes = [
-        'Platelets Count',
-        'Hemoglobin',
-        'RBC',
-        'WBC',
-        'Vitamin D',
-        'Cholesterol Levels',
-    ];
+    const handleInputChange = (field: string, value: string) => {
+        setTestData(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    // Get available tests (excluding already selected ones)
+    const availableTests = availableTestTypes
+        .filter(testType => !selectedFields.some(field => field.testType === testType));
+
+    const addTestField = () => {
+        if (selectedTest && !selectedFields.some(field => field.testType === selectedTest)) {
+            setSelectedFields([...selectedFields, { testType: selectedTest, value: '' }]);
+            setSelectedTest('');
+        }
+    };
+
+    const removeTestField = (testType: string) => {
+        setSelectedFields(selectedFields.filter(field => field.testType !== testType));
+    };
+
+    const handleValueChange = (testType: string, value: string) => {
+        setSelectedFields(selectedFields.map(field => 
+            field.testType === testType ? { ...field, value } : field
+        ));
+    };
+
+    const isOutsideRange = (value: number, min: number, max: number): boolean => {
+        return value < min || value > max;
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setIsSubmitting(true);
 
-        if (!testType || !testValue || !testDate) {
-            setError('All fields are required.');
-            setIsSubmitting(false);
-            return;
-        }
-
-        if (parseFloat(testValue) < 0) {
-            setError('Test value must be a non-negative number.');
-            setIsSubmitting(false);
-            return;
-        }
-
         try {
-            await api.post('/medical-form', {
-                testType,
-                testValue,
-                testDate,
-                userId: user?.id
-            });
+            // Convert selected fields to the format expected by the API
+            const testSubmissions = selectedFields
+                .filter(field => field.value !== '')
+                .map(field => {
+                    const numValue = parseFloat(field.value);
+                    const { min, max } = testParameters[field.testType] || DEFAULT_TEST_PARAMS;
+                    const isAbnormal = isOutsideRange(numValue, min, max);
+
+                    return api.post('/medical-form', {
+                        testType: field.testType,
+                        testValue: numValue,
+                        testDate: testData.testDate,
+                        userId: user?.id,
+                        isAbnormal
+                    });
+                });
+
+            await Promise.all(testSubmissions);
             await refreshStats();
-            toast.success('Test record added successfully!');
+            toast.success('Test results recorded successfully!');
             navigate('/');
         } catch (err) {
-            console.error('Error submitting medical form:', err);
-            setError('Submission failed. Please try again.');
+            console.error('Error submitting test results:', err);
+            setError('Failed to submit test results. Please try again.');
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    return (
-        <div className="flex-1 overflow-auto bg-gray-50 p-6">
-            <div className="max-w-2xl mx-auto">
-                {/* Header Section */}
-                <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-gray-900">Record Medical Test</h1>
-                    <p className="mt-1 text-gray-600">Enter your medical test details below</p>
+    const handleCSVUploadSuccess = (response: { tests: string[], parameters: Record<string, { unit: string, min: number, max: number }> }) => {
+        // Update available test types
+        setAvailableTestTypes(prevTests => {
+            const combined = prevTests.concat(
+                response.tests.filter(test => !testParameters[test])
+            );
+            const unique = combined.filter((test, index) => combined.indexOf(test) === index);
+            return unique.sort();
+        });
+
+        // Update test parameters and store in localStorage
+        setTestParameters((prev: Record<string, { unit: string, min: number, max: number }>) => {
+            const updated = {
+                ...prev,
+                ...response.parameters
+            };
+            localStorage.setItem(STORED_TESTS_KEY, JSON.stringify(response.parameters));
+            return updated;
+        });
+
+        toast.success(`Added ${response.tests.length} new test types with parameters`);
+    };
+
+    // Update the test field rendering to handle missing parameters
+    const renderTestField = (field: TestField) => {
+        const params = testParameters[field.testType] || DEFAULT_TEST_PARAMS;
+        
+        return (
+            <div key={field.testType} className="relative group">
+                <div className="p-4 rounded-lg border border-gray-200 bg-white 
+                    hover:border-blue-300 hover:shadow-md transition-all duration-200">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {field.testType}
+                    </label>
+                    <div className="relative rounded-md shadow-sm">
+                        <input
+                            type="number"
+                            step="0.01"
+                            value={field.value}
+                            onChange={(e) => handleValueChange(field.testType, e.target.value)}
+                            className="block w-full rounded-md border-gray-200 pl-3 pr-12
+                                focus:border-blue-500 focus:ring-blue-500 sm:text-sm
+                                placeholder-gray-400"
+                            placeholder={`${params.min}-${params.max}`}
+                        />
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                            <span className="text-gray-500 sm:text-sm">
+                                {params.unit}
+                            </span>
+                        </div>
+                    </div>
+                    <p className="mt-1.5 text-xs text-gray-500">
+                        Normal range: {params.min}-{params.max} {params.unit}
+                    </p>
+                    <button
+                        type="button"
+                        onClick={() => removeTestField(field.testType)}
+                        className="absolute top-2 right-2 p-1.5 text-gray-400 
+                            hover:text-red-500 hover:bg-red-50 rounded-full
+                            transition-colors duration-200 opacity-0 group-hover:opacity-100"
+                        aria-label="Remove test"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
+            </div>
+        );
+    };
 
-                {/* Main Form Card */}
-                <div className="bg-white rounded-xl shadow-sm">
-                    <div className="p-6">
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            {/* Test Type Selection */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Test Type
-                                </label>
-                                <select
-                                    value={testType}
-                                    onChange={(e) => setTestType(e.target.value)}
-                                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                    required
-                                >
-                                    <option value="">Select a test type</option>
-                                    {testTypes.map((type) => (
-                                        <option key={type} value={type}>
-                                            {type}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
+    return (
+        <div className="flex-1 overflow-auto bg-gray-50 p-4 sm:p-6">
+            <div className="max-w-5xl mx-auto">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+                    {/* Header section */}
+                    <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+                        <h2 className="text-2xl font-semibold text-gray-800">Record Test Results</h2>
+                        <p className="mt-1 text-sm text-gray-600">
+                            Select tests and enter their values below
+                        </p>
+                    </div>
 
-                            {/* Test Value Input */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Test Value
-                                </label>
-                                <div className="relative rounded-lg shadow-sm">
+                    <form onSubmit={handleSubmit} className="p-6">
+                        <div className="space-y-6">
+                            {/* Test Date section */}
+                            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-gray-700">Test Date</label>
                                     <input
-                                        type="number"
-                                        value={testValue}
-                                        onChange={(e) => setTestValue(e.target.value)}
-                                        className="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+                                        type="date"
+                                        value={testData.testDate}
+                                        onChange={(e) => handleInputChange('testDate', e.target.value)}
+                                        className="block w-full rounded-lg border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                                         required
                                     />
                                 </div>
                             </div>
 
-                            {/* Test Date Input */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Test Date
-                                </label>
-                                <input
-                                    type="date"
-                                    value={testDate}
-                                    onChange={(e) => setTestDate(e.target.value)}
-                                    className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                    required
-                                />
+                            {/* Test Selection section */}
+                            <div className="sticky top-0 z-10 bg-white pb-4 border-b border-gray-100">
+                                <div className="flex gap-3 items-center justify-between">
+                                    <div className="flex gap-3 items-center">
+                                        <select
+                                            value={selectedTest}
+                                            onChange={(e) => setSelectedTest(e.target.value)}
+                                            className="w-64 rounded-lg border-gray-200 shadow-sm 
+                                                focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                        >
+                                            <option value="">Select a test to add</option>
+                                            {availableTests.map(testType => (
+                                                <option key={testType} value={testType}>{testType}</option>
+                                            ))}
+                                        </select>
+                                        <button
+                                            type="button"
+                                            onClick={addTestField}
+                                            disabled={!selectedTest}
+                                            className="inline-flex items-center justify-center h-9 px-4
+                                                bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                                                focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+                                                disabled:bg-blue-300 disabled:cursor-not-allowed 
+                                                transition-colors duration-200 whitespace-nowrap"
+                                        >
+                                            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                            </svg>
+                                            Add Test
+                                        </button>
+                                    </div>
+                                    <CSVUpload onUploadSuccess={handleCSVUploadSuccess} />
+                                </div>
+                            </div>
+
+                            {/* Selected Tests Grid */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto p-1">
+                                {selectedFields.map(field => renderTestField(field))}
                             </div>
 
                             {/* Error Message */}
                             {error && (
-                                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+                                <div className="rounded-lg bg-red-50 p-4 border border-red-100">
                                     <div className="flex">
-                                        <div className="flex-shrink-0">
-                                            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                                            </svg>
-                                        </div>
-                                        <div className="ml-3">
-                                            <p className="text-sm text-red-700">{error}</p>
-                                        </div>
+                                        <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" />
+                                        </svg>
+                                        <p className="ml-3 text-sm text-red-700">{error}</p>
                                     </div>
                                 </div>
                             )}
 
                             {/* Submit Button */}
-                            <div className="flex items-center justify-end">
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting}
-                                    className={`
-                                        inline-flex items-center px-6 py-3 border border-transparent 
-                                        text-base font-medium rounded-lg shadow-sm text-white 
-                                        ${isSubmitting 
-                                            ? 'bg-indigo-400 cursor-not-allowed' 
-                                            : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
-                                        }
-                                    `}
-                                >
-                                    {isSubmitting ? (
-                                        <>
-                                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                            Recording...
-                                        </>
-                                    ) : (
-                                        'Record Test Data'
-                                    )}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
-                {/* Information Cards */}
-                <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-white rounded-xl shadow-sm p-6">
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <div className="p-3 bg-blue-50 rounded-lg">
-                                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
+                            <div className="sticky bottom-0 bg-white pt-4 mt-6 border-t border-gray-100">
+                                <div className="flex justify-end">
+                                    <button
+                                        type="submit"
+                                        disabled={isSubmitting || selectedFields.length === 0}
+                                        className="inline-flex items-center px-6 py-3 border border-transparent 
+                                            text-base font-medium rounded-lg shadow-sm text-white 
+                                            bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 
+                                            focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300 
+                                            disabled:cursor-not-allowed transition-all duration-200"
+                                    >
+                                        {isSubmitting ? (
+                                            <>
+                                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                                </svg>
+                                                Recording...
+                                            </>
+                                        ) : 'Record Results'}
+                                    </button>
                                 </div>
                             </div>
-                            <div className="ml-4">
-                                <h3 className="text-sm font-medium text-gray-900">Need Help?</h3>
-                                <p className="mt-1 text-sm text-gray-500">
-                                    Contact your healthcare provider for guidance on test values and interpretation.
-                                </p>
-                            </div>
                         </div>
-                    </div>
-
-                    <div className="bg-white rounded-xl shadow-sm p-6">
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <div className="p-3 bg-green-50 rounded-lg">
-                                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <div className="ml-4">
-                                <h3 className="text-sm font-medium text-gray-900">Data Security</h3>
-                                <p className="mt-1 text-sm text-gray-500">
-                                    Your medical data is encrypted and securely stored.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+                    </form>
                 </div>
             </div>
         </div>

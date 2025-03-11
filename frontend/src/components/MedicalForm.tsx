@@ -25,6 +25,15 @@ const DEFAULT_TEST_PARAMS = {
     max: 100
 };
 
+// Add at the top of the file
+const STORED_TESTS_KEY = 'tibbtrack_test_parameters';
+
+// Initialize CBC_PARAMETERS with stored data
+const getStoredParameters = () => {
+    const stored = localStorage.getItem(STORED_TESTS_KEY);
+    return stored ? { ...CBC_PARAMETERS, ...JSON.parse(stored) } : CBC_PARAMETERS;
+};
+
 const MedicalForm: React.FC = () => {
     const [testData, setTestData] = useState<CBCTestData>({
         testDate: new Date().toISOString().split('T')[0]
@@ -36,8 +45,9 @@ const MedicalForm: React.FC = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
     const { refreshStats } = useTestStats();
-    const [availableTestTypes, setAvailableTestTypes] = useState<string[]>(
-        Object.keys(CBC_PARAMETERS)
+    const [testParameters, setTestParameters] = useState(() => getStoredParameters());
+    const [availableTestTypes, setAvailableTestTypes] = useState<string[]>(() => 
+        Object.keys(testParameters)
     );
 
     const handleInputChange = (field: string, value: string) => {
@@ -83,7 +93,7 @@ const MedicalForm: React.FC = () => {
                 .filter(field => field.value !== '')
                 .map(field => {
                     const numValue = parseFloat(field.value);
-                    const { min, max } = CBC_PARAMETERS[field.testType] || DEFAULT_TEST_PARAMS;
+                    const { min, max } = testParameters[field.testType] || DEFAULT_TEST_PARAMS;
                     const isAbnormal = isOutsideRange(numValue, min, max);
 
                     return api.post('/medical-form', {
@@ -111,17 +121,20 @@ const MedicalForm: React.FC = () => {
         // Update available test types
         setAvailableTestTypes(prevTests => {
             const combined = prevTests.concat(
-                response.tests.filter(test => !CBC_PARAMETERS[test])
+                response.tests.filter(test => !testParameters[test])
             );
             const unique = combined.filter((test, index) => combined.indexOf(test) === index);
             return unique.sort();
         });
 
-        // Add new tests with their parameters to CBC_PARAMETERS
-        Object.entries(response.parameters).forEach(([testName, params]) => {
-            if (!CBC_PARAMETERS[testName]) {
-                CBC_PARAMETERS[testName] = params;
-            }
+        // Update test parameters and store in localStorage
+        setTestParameters((prev: Record<string, { unit: string, min: number, max: number }>) => {
+            const updated = {
+                ...prev,
+                ...response.parameters
+            };
+            localStorage.setItem(STORED_TESTS_KEY, JSON.stringify(response.parameters));
+            return updated;
         });
 
         toast.success(`Added ${response.tests.length} new test types with parameters`);
@@ -129,7 +142,7 @@ const MedicalForm: React.FC = () => {
 
     // Update the test field rendering to handle missing parameters
     const renderTestField = (field: TestField) => {
-        const params = CBC_PARAMETERS[field.testType] || DEFAULT_TEST_PARAMS;
+        const params = testParameters[field.testType] || DEFAULT_TEST_PARAMS;
         
         return (
             <div key={field.testType} className="relative group">

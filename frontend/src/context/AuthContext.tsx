@@ -87,6 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logAuth('Logging out');
         try {
             await api.post('/auth/logout');
+            localStorage.removeItem('tibbtrack_test_parameters');
         } catch (error) {
             console.error('Logout failed:', error);
         } finally {

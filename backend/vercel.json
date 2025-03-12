@@ -1,7 +1,7 @@
 {
     "version": 2,
     "env": {
-        "CLIENT_URL": "@client_url"
+        "CLIENT_URL": "https://medical-test-tracking.vercel.app"
     },
     "builds": [
         {

@@ -15,12 +15,13 @@ async function bootstrap() {
   // Handle preflight requests and CORS
   app.use((req: Request, res: Response, next: NextFunction) => {
     const origin: string | undefined = req.headers.origin;
-    if (origin && allowedOrigins.includes(origin)) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
-      res.setHeader('Access-Control-Allow-Credentials', 'true');
-      res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, Origin, X-Requested-With');
-    }
+    
+    // Always set CORS headers
+    res.setHeader('Access-Control-Allow-Origin', origin || allowedOrigins[0]);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, Origin, X-Requested-With');
+    res.setHeader('Access-Control-Expose-Headers', 'Set-Cookie');
 
     // Handle preflight
     if (req.method === 'OPTIONS') {

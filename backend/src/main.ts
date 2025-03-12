@@ -12,24 +12,19 @@ async function bootstrap() {
     'http://localhost:3001'
   ];
 
-  // Handle preflight requests and CORS
-  app.use((req: Request, res: Response, next: NextFunction) => {
-    const origin: string | undefined = req.headers.origin;
-    
-    // Always set CORS headers
-    res.setHeader('Access-Control-Allow-Origin', origin || allowedOrigins[0]);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, Origin, X-Requested-With');
-    res.setHeader('Access-Control-Expose-Headers', 'Set-Cookie');
-
-    // Handle preflight
-    if (req.method === 'OPTIONS') {
-      res.status(200).end();
-      return;
-    }
-
-    next();
+  // Enable CORS with specific configuration
+  app.enableCors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'Origin', 'X-Requested-With'],
+    exposedHeaders: ['Set-Cookie'],
   });
 
   app.use(cookieParser());

@@ -5,12 +5,11 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 // Create axios instance with defaults
 const axiosInstance: AxiosInstance = axios.create({
     baseURL: API_URL,
-    withCredentials: true, // This is crucial for cookies to be sent!
+    withCredentials: true, // Important for cookies if using sessions
     timeout: 10000,
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Access-Control-Allow-Origin': '*'
     }
 });
 
@@ -90,7 +89,6 @@ axiosInstance.interceptors.response.use(
 
 // Add request interceptor for CORS headers
 axiosInstance.interceptors.request.use((config) => {
-    config.headers['Access-Control-Allow-Origin'] = '*';
     return config;
 });
 

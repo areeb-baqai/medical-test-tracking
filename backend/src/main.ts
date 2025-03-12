@@ -8,7 +8,7 @@ async function bootstrap() {
 
   // Simple CORS configuration
   app.enableCors({
-    origin: true, // Allow all origins in development
+    origin: "https://medical-test-tracking.vercel.app", // Allow all origins in development
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Accept, Authorization',

@@ -5,14 +5,14 @@
     },
     "builds": [
         {
-            "src": "dist/main.js",
+            "src": "backend/main.ts",
             "use": "@vercel/node"
         }
     ],
     "routes": [
         {
             "src": "/(.*)",
-            "dest": "dist/main.ts",
+            "dest": "backend/main.ts",
             "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
         }
         

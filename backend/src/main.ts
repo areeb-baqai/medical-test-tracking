@@ -9,7 +9,7 @@ async function bootstrap() {
   // Get the client URL from environment variable or use localhost as fallback
   const clientUrl = process.env.CLIENT_URL || 'http://localhost:3001';
   
-  // Configure CORS with multiple origins
+  // Configure CORS with multiple origins and preflight handling
   const allowedOrigins = [
     'https://medical-test-tracking-backend.vercel.app',
     'https://medical-test-tracking.vercel.app',
@@ -19,8 +19,10 @@ async function bootstrap() {
   app.enableCors({
     origin: allowedOrigins,
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204
   });
 
   app.use(cookieParser());

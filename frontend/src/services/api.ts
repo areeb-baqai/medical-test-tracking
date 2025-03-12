@@ -87,9 +87,9 @@ axiosInstance.interceptors.response.use(
     }
 );
 
-// Add request interceptor to handle CORS
+// Remove the Origin header interceptor as browsers handle this automatically
 axiosInstance.interceptors.request.use((config) => {
-    config.headers['Origin'] = window.location.origin;
+    // Don't set Origin header - browser will handle this
     return config;
 });
 

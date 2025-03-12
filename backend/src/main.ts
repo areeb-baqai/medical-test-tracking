@@ -6,25 +6,17 @@ import { NextFunction, Request, Response } from 'express';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
-  const allowedOrigins = [
-    'https://medical-test-tracking-backend.vercel.app',
-    'https://medical-test-tracking.vercel.app',
-    'http://localhost:3001'
-  ];
-
-  // Enable CORS with specific configuration
+  // Enable CORS
   app.enableCors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
+    origin: [
+      'https://medical-test-tracking.vercel.app',
+      'http://localhost:3001'
+    ],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'Origin', 'X-Requested-With'],
-    exposedHeaders: ['Set-Cookie'],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Accept, Authorization',
+    preflightContinue: false,
+    optionsSuccessStatus: 204
   });
 
   app.use(cookieParser());

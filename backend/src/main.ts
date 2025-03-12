@@ -6,23 +6,29 @@ import { NextFunction, Request, Response } from 'express';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
-  // Get the client URL from environment variable or use localhost as fallback
-  const clientUrl = process.env.CLIENT_URL || 'http://localhost:3001';
-  
-  // Configure CORS with multiple origins and preflight handling
   const allowedOrigins = [
     'https://medical-test-tracking-backend.vercel.app',
     'https://medical-test-tracking.vercel.app',
     'http://localhost:3001'
   ];
 
-  app.enableCors({
-    origin: allowedOrigins,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
-    preflightContinue: false,
-    optionsSuccessStatus: 204
+  // Handle preflight requests and CORS
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const origin: string | undefined = req.headers.origin;
+    if (origin && allowedOrigins.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, Origin, X-Requested-With');
+    }
+
+    // Handle preflight
+    if (req.method === 'OPTIONS') {
+      res.status(200).end();
+      return;
+    }
+
+    next();
   });
 
   app.use(cookieParser());

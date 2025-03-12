@@ -7,6 +7,10 @@ const axiosInstance: AxiosInstance = axios.create({
     baseURL: API_URL,
     withCredentials: true, // This is crucial for cookies to be sent!
     timeout: 10000,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    }
 });
 
 // Flag to prevent multiple refresh calls
@@ -82,6 +86,12 @@ axiosInstance.interceptors.response.use(
         return Promise.reject(error);
     }
 );
+
+// Add request interceptor to handle CORS
+axiosInstance.interceptors.request.use((config) => {
+    config.headers['Origin'] = window.location.origin;
+    return config;
+});
 
 const api = {
     ...axiosInstance,

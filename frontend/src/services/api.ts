@@ -10,7 +10,7 @@ const axiosInstance: AxiosInstance = axios.create({
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Access-Control-Allow-Origin': 'https://medical-test-tracking-backend.vercel.app'
+        'Access-Control-Allow-Origin': '*'
     }
 });
 
@@ -90,7 +90,7 @@ axiosInstance.interceptors.response.use(
 
 // Add request interceptor for CORS headers
 axiosInstance.interceptors.request.use((config) => {
-    config.headers['Access-Control-Allow-Origin'] = 'https://medical-test-tracking-backend.vercel.app';
+    config.headers['Access-Control-Allow-Origin'] = '*';
     return config;
 });
 

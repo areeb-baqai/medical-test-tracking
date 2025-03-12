@@ -4,7 +4,7 @@ import * as cookieParser from 'cookie-parser';
 import { NextFunction, Request, Response } from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {cors: true});
 
   // Simple CORS configuration
   app.enableCors({

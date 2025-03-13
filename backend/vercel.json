@@ -1,20 +1,21 @@
 {
     "version": 2,
     "env": {
-        "CLIENT_URL": "https://medical-test-tracking.vercel.app"
+      "CLIENT_URL": "https://medical-test-tracking.vercel.app"
     },
     "builds": [
-        {
-            "src": "src/main.ts",
-            "use": "@vercel/node"
-        }
+      {
+        "src": "package.json",
+        "use": "@vercel/node",
+        "config": { "includeFiles": ["dist/**"] }
+      }
     ],
     "routes": [
-        {
-            "src": "/(.*)",
-            "dest": "src/main.ts",
-            "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
-        }
-        
+      {
+        "src": "/(.*)",
+        "dest": "/dist/main.js",
+        "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+      }
     ]
-}
+  }
+  

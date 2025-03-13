@@ -30,6 +30,8 @@ exports.AppModule = AppModule = __decorate([
                 ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
                 entities: [auth_entity_1.User, medical_form_entity_1.MedicalForm, blood_test_entity_1.BloodTest],
                 synchronize: process.env.NODE_ENV !== 'production',
+                autoLoadEntities: true,
+                logging: true,
             }),
             auth_module_1.AuthModule,
             medical_form_module_1.MedicalFormModule,

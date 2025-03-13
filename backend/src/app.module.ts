@@ -17,6 +17,8 @@ import { StatsModule } from './stats/stats.module';
             ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
             entities: [User, MedicalForm, BloodTest],
             synchronize: process.env.NODE_ENV !== 'production',
+            autoLoadEntities: true,
+            logging: true,
         }),
         AuthModule,
         MedicalFormModule,

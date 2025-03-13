@@ -12,6 +12,7 @@
         "dest": "src/main.ts",
         "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
       }
-    ]
+    ],
+    "buildCommand": "npm run vercel-build"
   }
   

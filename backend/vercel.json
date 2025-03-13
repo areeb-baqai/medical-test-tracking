@@ -7,14 +7,15 @@
       {
         "src": "package.json",
         "use": "@vercel/node",
-        "config": { "includeFiles": ["dist/**"] }
+        "config": {
+          "includeFiles": ["dist/**"]
+        }
       }
     ],
     "routes": [
       {
         "src": "/(.*)",
-        "dest": "/dist/main.js",
-        "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+        "dest": "/dist/main"
       }
     ]
   }

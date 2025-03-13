@@ -13,13 +13,10 @@ import { StatsModule } from './stats/stats.module';
         ConfigModule.forRoot(), // Load environment variables
         TypeOrmModule.forRoot({
             type: 'postgres',
-            host: process.env.DB_HOST || 'localhost', // Default to 'localhost'
-            port: +process.env.DB_PORT! || 5432, // Use '!' to assert that it is defined
-            username: process.env.DB_USERNAME || 'Areeb', // Default username
-            password: process.env.DB_PASSWORD || '1234', // Default password
-            database: process.env.DB_NAME || 'testdb', // Default database
+            url: process.env.DATABASE_URL,
+            ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
             entities: [User, MedicalForm, BloodTest],
-            synchronize: true, // Set to false in production
+            synchronize: process.env.NODE_ENV !== 'production',
         }),
         AuthModule,
         MedicalFormModule,

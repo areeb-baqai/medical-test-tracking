@@ -8,6 +8,7 @@ import { MedicalForm } from './medical-form/medical-form.entity';
 import { BloodTestModule } from './blood-test/blood-test.module';
 import { BloodTest } from './blood-test/blood-test.entity';
 import { StatsModule } from './stats/stats.module';
+import { truncate } from 'node:fs/promises';
 @Module({
     imports: [
         ConfigModule.forRoot(), // Load environment variables
@@ -16,7 +17,7 @@ import { StatsModule } from './stats/stats.module';
             url: process.env.DATABASE_URL,
             ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
             entities: [User, MedicalForm, BloodTest],
-            synchronize: process.env.NODE_ENV !== 'production',
+            synchronize: true,
             autoLoadEntities: true,
             logging: true,
         }),

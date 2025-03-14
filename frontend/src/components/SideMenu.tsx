@@ -21,7 +21,7 @@ const SideMenu: React.FC = () => {
             setIsLoading(false);
         }  
         
-        }, [stats?.totalTests]); 
+        }, [stats?.totalTests]);
     
 
     const menuItems = [

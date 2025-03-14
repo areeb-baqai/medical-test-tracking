@@ -10,12 +10,9 @@ exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
 const auth_module_1 = require("./auth/auth.module");
 const typeorm_1 = require("@nestjs/typeorm");
-const auth_entity_1 = require("./auth/auth.entity");
 const config_1 = require("@nestjs/config");
 const medical_form_module_1 = require("./medical-form/medical-form.module");
-const medical_form_entity_1 = require("./medical-form/medical-form.entity");
 const blood_test_module_1 = require("./blood-test/blood-test.module");
-const blood_test_entity_1 = require("./blood-test/blood-test.entity");
 const stats_module_1 = require("./stats/stats.module");
 let AppModule = class AppModule {
 };
@@ -28,9 +25,10 @@ exports.AppModule = AppModule = __decorate([
                 type: 'postgres',
                 url: process.env.DATABASE_URL,
                 ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-                entities: [auth_entity_1.User, medical_form_entity_1.MedicalForm, blood_test_entity_1.BloodTest],
-                synchronize: process.env.NODE_ENV !== 'production',
+                synchronize: false,
                 autoLoadEntities: true,
+                migrationsRun: true,
+                migrations: ['dist/migrations/*.js'],
                 logging: true,
             }),
             auth_module_1.AuthModule,

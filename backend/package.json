@@ -18,11 +18,12 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
-    "migration:generate": "npm run typeorm -- migration:generate -d src/config/typeorm.config.ts -n",
+    "migration:generate": "cross-env NODE_ENV=development npm run typeorm -- migration:generate src/migrations/InitialMigration -d src/config/typeorm.config.ts",
     "migration:create": "npm run typeorm -- migration:create -d src/config/typeorm.config.ts -n",
-    "migration:run": "npm run typeorm -- migration:run -d src/config/typeorm.config.ts",
+    "migration:run": "cross-env NODE_ENV=development npm run typeorm -- migration:run -d src/config/typeorm.config.ts",
+    "migration:run:prod": "cross-env NODE_ENV=production npm run typeorm -- migration:run -d src/config/typeorm.config.ts",
     "migration:revert": "npm run typeorm -- migration:revert -d src/config/typeorm.config.ts",
-    "vercel-build": "npm run migration:run && nest build"
+    "vercel-build": "cross-env NODE_ENV=production npm run migration:run:prod && nest build"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
@@ -40,9 +41,10 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
-    "pg": "^8.13.3",
+    "pg": "^8.14.0",
     "reflect-metadata": "^0.1.13",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "typeorm": "^0.3.21"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
@@ -59,13 +61,14 @@
     "@types/passport-local": "^1.0.38",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
+    "cross-env": "^7.0.3",
     "eslint": "^8.42.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",
     "jest": "^29.5.0",
     "prettier": "^3.0.0",
     "ts-jest": "^29.1.0",
-    "ts-node": "^10.9.1",
+    "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.1.3"
   },

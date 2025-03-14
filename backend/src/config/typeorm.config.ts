@@ -9,7 +9,7 @@ import { BloodTest } from '../blood-test/blood-test.entity';
 config();
 
 const configService = new ConfigService();
-const nodeEnv = configService.get('NODE_ENV') || 'development';
+const nodeEnv = configService.get('NODE_ENV');
 
 // Configure SSL based on environment
 const sslConfig = nodeEnv === 'production' 
@@ -21,6 +21,8 @@ export default new DataSource({
   url: configService.get('DATABASE_URL'),
   ...sslConfig,
   entities: [User, MedicalForm, BloodTest],
-  migrations: ['src/migrations/*.ts'],
+  migrations: [__dirname + '/../migrations/*.{ts,js}'],
   migrationsTableName: 'migrations',
-}); 
+  logging: true,
+  schema: 'public',
+});

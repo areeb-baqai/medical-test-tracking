@@ -278,6 +278,11 @@ const MedicalForm: React.FC = () => {
                                     </div>
                                     <CSVUpload onUploadSuccess={handleCSVUploadSuccess} />
                                 </div>
+                                {/* Help text for CSV upload */}
+                                <p className="mt-2 text-sm text-gray-500">
+                                    Use the CSV upload to quickly add multiple test types to your form. 
+                                    This allows you to record various tests in your personal account efficiently.
+                                </p>
                             </div>
 
                             {/* Selected Tests Grid */}

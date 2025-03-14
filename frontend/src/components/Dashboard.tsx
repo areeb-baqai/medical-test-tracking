@@ -4,6 +4,7 @@ import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import TestHistory from './TestHistory';
 import { CBC_PARAMETERS } from '../constants/testParameters';
+import { useTestStats } from '../context/TestStatsContext';
 
 const Dashboard: React.FC = () => {
     const { user } = useAuth();
@@ -12,10 +13,15 @@ const Dashboard: React.FC = () => {
     const [selectedTestType, setSelectedTestType] = useState<string>('all');
     const [filteredData, setFilteredData] = useState<any[]>([]);
 
-    // Get unique test types from CBC_PARAMETERS
-    const testTypes = ['all', ...Object.keys(CBC_PARAMETERS)].sort();
+    const { 
+        stats, 
+        loading: testStatsLoading, 
+        availableTestTypes,
+        selectedFilter, 
+        setSelectedFilter 
+    } = useTestStats();
 
-    // Fetch user data on component mount
+    // Fetch user data when component mounts or when availableTestTypes changes
     useEffect(() => {
         const fetchMedicalData = async () => {
             try {
@@ -38,7 +44,10 @@ const Dashboard: React.FC = () => {
         };
 
         fetchMedicalData();
-    }, [user?.id]);
+    }, [user?.id, availableTestTypes]); // Add availableTestTypes as dependency
+
+    // Get dropdown options using availableTestTypes from context
+    const testTypes = ['all', ...availableTestTypes].sort();
 
     // Filter tests based on selected type
     const filteredTests = medicalData.filter(test => 
@@ -54,8 +63,8 @@ const Dashboard: React.FC = () => {
         };
     };
 
-    // Update filtered stats based on test type
-    const stats = selectedTestType === 'all' 
+    // Rename the second stats variable
+    const localStats = selectedTestType === 'all' 
         ? calculateStats(medicalData)
         : calculateStats(filteredTests);
 
@@ -102,6 +111,12 @@ const Dashboard: React.FC = () => {
     // Get unique test types for the legend (only used when showing all test types)
     const uniqueTestTypes = Array.from(new Set(medicalData.map(item => item.testType)));
 
+    // Handle filter change
+    const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setSelectedFilter(e.target.value);
+        // The useEffect in TestStatsContext will automatically refresh data
+    };
+
     if (loading) {
         return <div className="flex justify-center items-center h-screen">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -143,7 +158,7 @@ const Dashboard: React.FC = () => {
                         <div className="ml-4">
                             <h3 className="text-sm font-medium text-gray-500">Total Tests</h3>
                             <p className="text-2xl font-semibold text-gray-900">
-                                {stats.totalTests}
+                                {localStats.totalTests}
                             </p>
                         </div>
                     </div>
@@ -154,7 +169,7 @@ const Dashboard: React.FC = () => {
                         <div className="ml-4">
                             <h3 className="text-sm font-medium text-gray-500">Normal Results</h3>
                             <p className="text-2xl font-semibold text-green-600">
-                                {stats.normalTests}
+                                {localStats.normalTests}
                             </p>
                         </div>
                     </div>
@@ -165,7 +180,7 @@ const Dashboard: React.FC = () => {
                         <div className="ml-4">
                             <h3 className="text-sm font-medium text-gray-500">Abnormal Results</h3>
                             <p className="text-2xl font-semibold text-red-600">
-                                {stats.abnormalTests}
+                                {localStats.abnormalTests}
                             </p>
                         </div>
                     </div>

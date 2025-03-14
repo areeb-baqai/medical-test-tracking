@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import api from '../services/api';
 import { useTestStats } from '../context/TestStatsContext';
+import { useAuth } from '../context/AuthContext';
 
 interface TestStats {
     lastTestDate: string;
@@ -11,15 +12,16 @@ interface TestStats {
 const SideMenu: React.FC = () => {
     const location = useLocation();
     const { stats } = useTestStats();
+    const { user, logout } = useAuth();
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (stats.totalTests > 0) {
+        if (stats?.totalTests > 0) {
             setIsLoading(false);
         }  
         
-        }, [stats.totalTests]); 
+        }, [stats?.totalTests]); 
     
 
     const menuItems = [
@@ -60,6 +62,9 @@ const SideMenu: React.FC = () => {
         //     ),
         // },
     ];
+
+    // Add proper null check for stats
+    const totalTests = stats?.totalTests || 0;
 
     return (
         <aside className="bg-white w-64 min-h-screen border-r border-gray-200">
@@ -107,7 +112,7 @@ const SideMenu: React.FC = () => {
                                 ) : error ? (
                                     <span className="text-sm text-red-500">Error</span>
                                 ) : (
-                                    <span className="text-sm font-medium text-gray-900">{stats.totalTests}</span>
+                                    <span className="text-sm font-medium text-gray-900">{totalTests}</span>
                                 )}
                             </div>
                         </div>

@@ -44,7 +44,7 @@ const MedicalForm: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { user } = useAuth();
     const navigate = useNavigate();
-    const { refreshStats } = useTestStats();
+    const { refreshStats, updateTestParameters } = useTestStats();
     const [testParameters, setTestParameters] = useState(() => getStoredParameters());
     const [availableTestTypes, setAvailableTestTypes] = useState<string[]>(() => 
         Object.keys(testParameters)
@@ -118,23 +118,23 @@ const MedicalForm: React.FC = () => {
     };
 
     const handleCSVUploadSuccess = (response: { tests: string[], parameters: Record<string, { unit: string, min: number, max: number }> }) => {
-        // Update available test types
+        // Update test parameters in context (will be available to Dashboard)
+        refreshStats(); // Refresh stats after adding new test types
+        updateTestParameters(response.parameters);
+        
+        // Still update local state for immediate UI update
         setAvailableTestTypes(prevTests => {
             const combined = prevTests.concat(
                 response.tests.filter(test => !testParameters[test])
             );
-            const unique = combined.filter((test, index) => combined.indexOf(test) === index);
-            return unique.sort();
+            return Array.from(new Set(combined)).sort();
         });
-
-        // Update test parameters and store in localStorage
+        
         setTestParameters((prev: Record<string, { unit: string, min: number, max: number }>) => {
-            const updated = {
+            return {
                 ...prev,
                 ...response.parameters
             };
-            localStorage.setItem(STORED_TESTS_KEY, JSON.stringify(response.parameters));
-            return updated;
         });
 
         toast.success(`Added ${response.tests.length} new test types with parameters`);
@@ -188,6 +188,50 @@ const MedicalForm: React.FC = () => {
         );
     };
 
+    const handleTestTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const selectedValue = e.target.value;
+        
+        if (selectedValue) {
+            // Use the existing component function structure
+            setSelectedFields([
+                ...selectedFields, 
+                { 
+                    testType: selectedValue, 
+                    value: '' 
+                }
+            ]);
+            
+            // Reset the dropdown
+            setSelectedTest('');
+        }
+    };
+
+    const getUnitForTestType = (testType: string): string => {
+        switch (testType) {
+            case 'hemoglobin':
+                return 'g/dL';
+            case 'whiteBloodCells':
+                return '×10³/µL';
+            case 'platelets':
+                return '×10³/µL';
+            default:
+                return '';
+        }
+    };
+
+    const formatTestName = (testType: string): string => {
+        switch (testType) {
+            case 'hemoglobin':
+                return 'Hemoglobin';
+            case 'whiteBloodCells':
+                return 'White Blood Cells';
+            case 'platelets':
+                return 'Platelets';
+            default:
+                return testType;
+        }
+    };
+
     return (
         <div className="flex-1 overflow-auto bg-gray-50 p-4 sm:p-6">
             <div className="max-w-5xl mx-auto">
@@ -222,7 +266,7 @@ const MedicalForm: React.FC = () => {
                                     <div className="flex gap-3 items-center">
                                         <select
                                             value={selectedTest}
-                                            onChange={(e) => setSelectedTest(e.target.value)}
+                                            onChange={handleTestTypeChange}
                                             className="w-64 rounded-lg border-gray-200 shadow-sm 
                                                 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                                         >
@@ -231,21 +275,6 @@ const MedicalForm: React.FC = () => {
                                                 <option key={testType} value={testType}>{testType}</option>
                                             ))}
                                         </select>
-                                        <button
-                                            type="button"
-                                            onClick={addTestField}
-                                            disabled={!selectedTest}
-                                            className="inline-flex items-center justify-center h-9 px-4
-                                                bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                                                focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
-                                                disabled:bg-blue-300 disabled:cursor-not-allowed 
-                                                transition-colors duration-200 whitespace-nowrap"
-                                        >
-                                            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                            </svg>
-                                            Add Test
-                                        </button>
                                     </div>
                                     <CSVUpload onUploadSuccess={handleCSVUploadSuccess} />
                                 </div>

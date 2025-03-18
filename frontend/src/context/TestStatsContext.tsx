@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import api from '../services/api';
+import { useAuth } from './AuthContext';
 
 // Import the CBC parameters from constants
 import { CBC_PARAMETERS } from '../constants/testParameters';
@@ -21,20 +22,30 @@ interface TestStatsContextProps {
     updateTestParameters: (parameters: Record<string, any>) => void;
     selectedFilter: string;
     setSelectedFilter: (filter: string) => void;
+    testParameters: Record<string, any>;
 }
 
 const TestStatsContext = createContext<TestStatsContextProps | undefined>(undefined);
 
+// Get stored parameters - merging defaults with custom values
+const getStoredParameters = () => {
+    const stored = localStorage.getItem(STORED_TESTS_KEY);
+    return stored ? { ...CBC_PARAMETERS, ...JSON.parse(stored) } : CBC_PARAMETERS;
+};
+
 export const TestStatsProvider: React.FC<{children: ReactNode}> = ({ children }) => {
+    const { user } = useAuth();
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState<boolean>(true);
-    const [availableTestTypes, setAvailableTestTypes] = useState<string[]>(() => {
-        // Initialize with stored test types from localStorage
-        const storedParams = localStorage.getItem(STORED_TESTS_KEY);
-        const parameters = storedParams ? JSON.parse(storedParams) : CBC_PARAMETERS;
-        return Object.keys(parameters);
-    });
-    const [selectedFilter, setSelectedFilter] = useState<string>('');
+    const [selectedFilter, setSelectedFilter] = useState<string>('week');
+    
+    // Initialize with BOTH default and stored parameters
+    const [testParameters, setTestParameters] = useState(() => getStoredParameters());
+    
+    // Make available test types derived from the merged parameters
+    const [availableTestTypes, setAvailableTestTypes] = useState<string[]>(() => 
+        Object.keys(testParameters)
+    );
 
     const fetchStats = async () => {
         try {
@@ -50,8 +61,10 @@ export const TestStatsProvider: React.FC<{children: ReactNode}> = ({ children })
     };
 
     useEffect(() => {
-        fetchStats();
-    }, [selectedFilter]); // Refetch when filter changes
+        if (user?.id) {
+            fetchStats();
+        }
+    }, [user, selectedFilter]);
 
     const refreshStats = async () => {
         await fetchStats();
@@ -64,16 +77,12 @@ export const TestStatsProvider: React.FC<{children: ReactNode}> = ({ children })
         });
     };
 
-    const updateTestParameters = (parameters: Record<string, any>) => {
-        // Update local storage
-        const storedParams = localStorage.getItem(STORED_TESTS_KEY);
-        const existingParams = storedParams ? JSON.parse(storedParams) : {};
-        const updatedParams = { ...existingParams, ...parameters };
-        localStorage.setItem(STORED_TESTS_KEY, JSON.stringify(updatedParams));
-        
-        // Update available test types
-        updateAvailableTestTypes(Object.keys(parameters));
-    };
+    const updateTestParameters = useCallback((newParameters: any) => {
+        const mergedParameters = { ...testParameters, ...newParameters };
+        setTestParameters(mergedParameters);
+        setAvailableTestTypes(Object.keys(mergedParameters));
+        localStorage.setItem(STORED_TESTS_KEY, JSON.stringify(mergedParameters));
+    }, [testParameters]);
 
     return (
         <TestStatsContext.Provider value={{ 
@@ -84,7 +93,8 @@ export const TestStatsProvider: React.FC<{children: ReactNode}> = ({ children })
             updateAvailableTestTypes,
             updateTestParameters,
             selectedFilter,
-            setSelectedFilter
+            setSelectedFilter,
+            testParameters
         }}>
             {children}
         </TestStatsContext.Provider>

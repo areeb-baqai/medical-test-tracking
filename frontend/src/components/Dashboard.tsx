@@ -8,11 +8,10 @@ import { useTestStats } from '../context/TestStatsContext';
 import Card from './common/Card';
 import Button from './common/Button';
 import Select from './common/Select';
+import { useMedicalData, useStats } from '../hooks/useApiQueries';
 
 const Dashboard: React.FC = () => {
     const { user } = useAuth();
-    const [medicalData, setMedicalData] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
     const [selectedTestType, setSelectedTestType] = useState<string>('all');
     const [filteredData, setFilteredData] = useState<any[]>([]);
 
@@ -23,6 +22,10 @@ const Dashboard: React.FC = () => {
         selectedFilter, 
         setSelectedFilter 
     } = useTestStats();
+
+    // Use React Query hooks with built-in caching
+    const { data: medicalData = [], isLoading: isLoadingData } = useMedicalData();
+    const { data: statsData, isLoading: isLoadingStats } = useStats();
 
     // Fetch user data when component mounts or when availableTestTypes changes
     useEffect(() => {
@@ -37,23 +40,23 @@ const Dashboard: React.FC = () => {
                     [item.testType]: item.testValue, // Dynamic key based on test type
                 }));
                 
-                setMedicalData(data);
                 setFilteredData(data);
             } catch (error) {
                 console.error('Failed to fetch medical data:', error);
-            } finally {
-                setLoading(false);
             }
         };
 
-        fetchMedicalData();
-    }, [user?.id, availableTestTypes]); // Add availableTestTypes as dependency
+        // fetchMedicalData();
+    }, [user?.id]);
+
+    console.log("medicalData", medicalData);
+    console.log("filteredData", filteredData);
 
     // Get dropdown options using availableTestTypes from context
     const testTypes = ['all', ...availableTestTypes].sort();
 
     // Filter tests based on selected type
-    const filteredTests = medicalData.filter(test => 
+    const filteredTests = medicalData.filter((test: any) => 
         selectedTestType === 'all' || test.testType === selectedTestType
     );
 
@@ -75,7 +78,7 @@ const Dashboard: React.FC = () => {
     const prepareChartData = () => {
         if (selectedTestType === 'all') {
             // For "All Test Types" - group data by test date, avoiding duplicates
-            return medicalData.reduce((acc: any[], item) => {
+            return medicalData.reduce((acc: any[], item: any) => {
                 const existingDate = acc.find(d => d.name === item.testDate);
                 if (existingDate) {
                     existingDate[item.testType] = item.testValue;
@@ -87,20 +90,20 @@ const Dashboard: React.FC = () => {
                 }
                 return acc;
             }, [])
-            .sort((a, b) => new Date(a.name).getTime() - new Date(b.name).getTime());
+            .sort((a: any, b: any) => new Date(a.name).getTime() - new Date(b.name).getTime());
         } else {
             // For specific test type - sort by date for historical view
             // Deduplicate entries with the same date by keeping the last one
             const uniqueDates = new Map();
             
             filteredTests
-                .forEach(item => {
+                .forEach((item: any) => {
                     uniqueDates.set(item.testDate, item);
                 });
                 
             const testSpecificData = Array.from(uniqueDates.values())
-                .sort((a, b) => new Date(a.testDate).getTime() - new Date(b.testDate).getTime())
-                .map(item => ({
+                .sort((a: any, b: any) => new Date(a.testDate).getTime() - new Date(b.testDate).getTime())
+                .map((item: any) => ({
                     name: item.testDate,
                     value: item.testValue
                 }));
@@ -112,7 +115,7 @@ const Dashboard: React.FC = () => {
     const chartData = prepareChartData();
     
     // Get unique test types for the legend (only used when showing all test types)
-    const uniqueTestTypes = Array.from(new Set(medicalData.map(item => item.testType)));
+    const uniqueTestTypes = Array.from(new Set(medicalData.map((item: any) => item.testType))) as string[];
 
     // Handle filter change
     const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -120,7 +123,7 @@ const Dashboard: React.FC = () => {
         // The useEffect in TestStatsContext will automatically refresh data
     };
 
-    if (loading) {
+    if (isLoadingData || isLoadingStats) {
         return <div className="flex justify-center items-center h-screen">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>;
@@ -204,7 +207,7 @@ const Dashboard: React.FC = () => {
                             <Tooltip />
                             <Legend />
                             {selectedTestType === 'all' ? (
-                                uniqueTestTypes.map((type, index) => (
+                                uniqueTestTypes.map((type: string, index) => (
                                     <Bar 
                                         key={type} 
                                         dataKey={type} 
@@ -230,7 +233,7 @@ const Dashboard: React.FC = () => {
                             <Tooltip />
                             <Legend />
                             {selectedTestType === 'all' ? (
-                                uniqueTestTypes.map((type, index) => (
+                                uniqueTestTypes.map((type: string, index) => (
                                     <Line
                                         key={type}
                                         type="monotone"
@@ -253,7 +256,7 @@ const Dashboard: React.FC = () => {
             </div>
 
             <div className="mt-8">
-                <TestHistory tests={filteredTests || []} />
+                <TestHistory tests={Array.isArray(filteredTests) ? filteredTests : []} />
             </div>
         </div>
     );

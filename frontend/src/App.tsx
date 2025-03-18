@@ -11,6 +11,10 @@ import './index.css';
 import { TestStatsProvider } from './context/TestStatsContext';
 import { ToastContainer } from 'react-toastify';
 import Footer from './components/Footer';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { queryClient } from './lib/reactQuery';
+
 // Header component for private routes
 const Header: React.FC = () => {
     const { user, logout } = useAuth();
@@ -111,14 +115,17 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
     return (
-        <Router>
-            <AuthProvider>
-                <TestStatsProvider>
-                    <AppContent />
-                    <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} />
-                </TestStatsProvider>
-            </AuthProvider>
-        </Router>
+        <QueryClientProvider client={queryClient}>
+            <Router>
+                <AuthProvider>
+                    <TestStatsProvider>
+                        <AppContent />
+                        <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} />
+                    </TestStatsProvider>
+                </AuthProvider>
+            </Router>
+            <ReactQueryDevtools initialIsOpen={false} position="bottom" />
+        </QueryClientProvider>
     );
 };
 

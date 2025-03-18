@@ -10,7 +10,9 @@ import CSVUpload from './CSVUpload';
 import Button from './common/Button';
 import Input from './common/Input';
 import Select from './common/Select';
-
+import { useQueryClient } from '@tanstack/react-query';
+import { useSubmitMedicalForm } from '../hooks/useApiQueries';
+import { queryKeys } from '../hooks/useApiQueries';
 interface CBCTestData {
     testDate: string;
     [key: string]: string | number;
@@ -52,6 +54,8 @@ const MedicalForm: React.FC = () => {
     const [availableTestTypes, setAvailableTestTypes] = useState<string[]>(() => 
         Object.keys(testParameters)
     );
+    const queryClient = useQueryClient();
+    const submitMutation = useSubmitMedicalForm();
 
     const handleInputChange = (field: string, value: string) => {
         setTestData(prev => ({
@@ -89,29 +93,39 @@ const MedicalForm: React.FC = () => {
         e.preventDefault();
         setError('');
         setIsSubmitting(true);
-
+        
         try {
-            // Convert selected fields to the format expected by the API
-            const testSubmissions = selectedFields
+            const testsToSubmit = selectedFields
                 .filter(field => field.value !== '')
                 .map(field => {
                     const numValue = parseFloat(field.value);
                     const { min, max } = testParameters[field.testType] || DEFAULT_TEST_PARAMS;
                     const isAbnormal = isOutsideRange(numValue, min, max);
-
-                    return api.post('/medical-form', {
+                    
+                    return {
                         testType: field.testType,
-                        testValue: numValue,
-                        testDate: testData.testDate,
-                        userId: user?.id,
+                        value: field.value,
                         isAbnormal
-                    });
+                    };
                 });
-
-            await Promise.all(testSubmissions);
+            
+            // Use the React Query mutation
+            await submitMutation.mutateAsync({
+                userId: user?.id,
+                testDate: testData.testDate,
+                tests: testsToSubmit
+            });
+            
+            // Force refresh of relevant queries
+            await queryClient.invalidateQueries({
+                queryKey: [queryKeys.medicalData, 'medical-data']
+            });
+            
+            // Additional refresh for specific dashboard-related data
             await refreshStats();
+            
             toast.success('Test results recorded successfully!');
-            navigate('/');
+            navigate('/dashboard');
         } catch (err) {
             console.error('Error submitting test results:', err);
             setError('Failed to submit test results. Please try again.');

@@ -50,8 +50,7 @@ export const TestStatsProvider: React.FC<{children: ReactNode}> = ({ children })
     const fetchStats = async () => {
         try {
             setLoading(true);
-            const filter = selectedFilter ? `?testType=${selectedFilter}` : '';
-            const response = await api.get(`/api/tests/stats${filter}`);
+            const response = await api.get(`/api/tests/stats`);
             setStats(response.data);
         } catch (error) {
             console.error('Error fetching stats:', error);

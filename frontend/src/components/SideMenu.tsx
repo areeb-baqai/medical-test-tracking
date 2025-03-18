@@ -17,11 +17,11 @@ const SideMenu: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (stats?.totalTests > 0) {
+        if (stats) {
             setIsLoading(false);
         }  
         
-        }, [stats?.totalTests]);
+        }, [stats]);
     
 
     const menuItems = [

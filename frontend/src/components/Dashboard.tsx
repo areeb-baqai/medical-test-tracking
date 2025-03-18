@@ -5,6 +5,9 @@ import { useAuth } from '../context/AuthContext';
 import TestHistory from './TestHistory';
 import { CBC_PARAMETERS } from '../constants/testParameters';
 import { useTestStats } from '../context/TestStatsContext';
+import Card from './common/Card';
+import Button from './common/Button';
+import Select from './common/Select';
 
 const Dashboard: React.FC = () => {
     const { user } = useAuth();
@@ -137,60 +140,61 @@ const Dashboard: React.FC = () => {
                     <h2 className="text-lg font-semibold text-gray-900">Filter Results</h2>
                 </div>
                 <div className="max-w-xs">
-                    <select
+                    <Select
                         value={selectedTestType}
                         onChange={(e) => setSelectedTestType(e.target.value)}
                         className="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
-                    >
-                        {testTypes.map(type => (
-                            <option key={type} value={type}>
-                                {type === 'all' ? 'All Tests' : type}
-                            </option>
-                        ))}
-                    </select>
+                        options={testTypes.map(type => ({
+                            value: type,
+                            label: type === 'all' ? 'All Tests' : type
+                        }))}
+                    />
                 </div>
             </div>
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                    <div className="flex items-center">
-                        <div className="ml-4">
-                            <h3 className="text-sm font-medium text-gray-500">Total Tests</h3>
-                            <p className="text-2xl font-semibold text-gray-900">
-                                {localStats.totalTests}
-                            </p>
+                <Card className="text-center">
+                    <div className="flex flex-col items-center">
+                        <div className="inline-flex h-12 w-12 rounded-full bg-indigo-100 items-center justify-center mb-3">
+                            <svg className="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
                         </div>
+                        <div className="text-3xl font-bold text-gray-900">{localStats.totalTests || 0}</div>
+                        <div className="text-sm text-gray-500">Total Tests Recorded</div>
                     </div>
-                </div>
+                </Card>
 
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                    <div className="flex items-center">
-                        <div className="ml-4">
-                            <h3 className="text-sm font-medium text-gray-500">Normal Results</h3>
-                            <p className="text-2xl font-semibold text-green-600">
-                                {localStats.normalTests}
-                            </p>
+                <Card className="text-center">
+                    <div className="flex flex-col items-center">
+                        <div className="inline-flex h-12 w-12 rounded-full bg-green-100 items-center justify-center mb-3">
+                            <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
                         </div>
+                        <div className="text-3xl font-bold text-gray-900">{localStats.normalTests || 0}</div>
+                        <div className="text-sm text-gray-500">Normal Results</div>
                     </div>
-                </div>
+                </Card>
 
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                    <div className="flex items-center">
-                        <div className="ml-4">
-                            <h3 className="text-sm font-medium text-gray-500">Abnormal Results</h3>
-                            <p className="text-2xl font-semibold text-red-600">
-                                {localStats.abnormalTests}
-                            </p>
+                <Card className="text-center">
+                    <div className="flex flex-col items-center">
+                        <div className="inline-flex h-12 w-12 rounded-full bg-yellow-100 items-center justify-center mb-3">
+                            <svg className="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
                         </div>
+                        <div className="text-3xl font-bold text-gray-900">{localStats.abnormalTests || 0}</div>
+                        <div className="text-sm text-gray-500">Abnormal Results</div>
                     </div>
-                </div>
+                </Card>
             </div>
 
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Bar Chart */}
-                <div className="bg-white rounded-xl shadow-sm p-6">
+                <Card>
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Test Results - Bar Chart</h3>
                     <div className="overflow-x-auto">
                         <BarChart width={600} height={300} data={chartData}>
@@ -213,10 +217,10 @@ const Dashboard: React.FC = () => {
                             )}
                         </BarChart>
                     </div>
-                </div>
+                </Card>
 
                 {/* Line Chart */}
-                <div className="bg-white rounded-xl shadow-sm p-6">
+                <Card>
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Test Results - Line Chart</h3>
                     <div className="overflow-x-auto">
                         <LineChart width={600} height={300} data={chartData}>
@@ -245,11 +249,11 @@ const Dashboard: React.FC = () => {
                             )}
                         </LineChart>
                     </div>
-                </div>
+                </Card>
             </div>
 
             <div className="mt-8">
-                <TestHistory tests={filteredTests} />
+                <TestHistory tests={filteredTests || []} />
             </div>
         </div>
     );

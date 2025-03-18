@@ -28,7 +28,7 @@ interface ReferenceRange {
     unit: string;
 }
 
-const TestHistory: React.FC<TestHistoryProps> = ({ tests }) => {
+const TestHistory: React.FC<TestHistoryProps> = ({ tests = [] }) => {
     console.log('tests', tests);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const [isPanelOpen, setIsPanelOpen] = useState(false);

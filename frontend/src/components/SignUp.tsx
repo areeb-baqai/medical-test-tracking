@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
+import Button from './common/Button';
+import Input from './common/Input';
 
 const SignUp: React.FC = () => {
     const navigate = useNavigate();
@@ -57,68 +59,53 @@ const SignUp: React.FC = () => {
 
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">First Name</label>
-                                    <input
-                                        type="text"
-                                        name="firstName"
-                                        value={formData.firstName}
-                                        onChange={handleChange}
-                                        className="mt-1 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">Last Name</label>
-                                    <input
-                                        type="text"
-                                        name="lastName"
-                                        value={formData.lastName}
-                                        onChange={handleChange}
-                                        className="mt-1 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Email</label>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    value={formData.email}
+                                <Input
+                                    type="text"
+                                    name="firstName"
+                                    value={formData.firstName}
                                     onChange={handleChange}
-                                    className="mt-1 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
-                                    placeholder="Enter your email"
+                                    label="First Name"
+                                    required
+                                />
+                                <Input
+                                    type="text"
+                                    name="lastName"
+                                    value={formData.lastName}
+                                    onChange={handleChange}
+                                    label="Last Name"
                                     required
                                 />
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Password</label>
-                                <input
-                                    type="password"
-                                    name="password"
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                    className="mt-1 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
-                                    placeholder="••••••••"
-                                    required
-                                />
-                            </div>
+                            <Input
+                                type="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                label="Email"
+                                placeholder="Enter your email"
+                                required
+                            />
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Confirm Password</label>
-                                <input
-                                    type="password"
-                                    name="confirmPassword"
-                                    value={formData.confirmPassword}
-                                    onChange={handleChange}
-                                    className="mt-1 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
-                                    placeholder="••••••••"
-                                    required
-                                />
-                            </div>
+                            <Input
+                                type="password"
+                                name="password"
+                                value={formData.password}
+                                onChange={handleChange}
+                                label="Password"
+                                placeholder="••••••••"
+                                required
+                            />
+
+                            <Input
+                                type="password"
+                                name="confirmPassword"
+                                value={formData.confirmPassword}
+                                onChange={handleChange}
+                                label="Confirm Password"
+                                placeholder="••••••••"
+                                required
+                            />
 
                             {error && (
                                 <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
@@ -126,25 +113,15 @@ const SignUp: React.FC = () => {
                                 </div>
                             )}
 
-                            <button
+                            <Button
                                 type="submit"
                                 disabled={isLoading}
-                                className={`w-full py-3 px-4 rounded-lg text-white text-sm font-semibold
-                                    ${isLoading 
-                                        ? 'bg-indigo-400 cursor-not-allowed' 
-                                        : 'bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-500/50'
-                                    } transition duration-200`}
+                                variant="primary"
+                                isLoading={isLoading}
+                                isFullWidth={true}
                             >
-                                {isLoading ? (
-                                    <div className="flex items-center justify-center">
-                                        <svg className="animate-spin h-5 w-5 mr-3 text-white" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                        </svg>
-                                        Creating account...
-                                    </div>
-                                ) : 'Create account'}
-                            </button>
+                                Create account
+                            </Button>
 
                             <div className="text-center">
                                 <Link 

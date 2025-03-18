@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import Button from './common/Button';
+import Input from './common/Input';
+import Select from './common/Select';
 
 interface ProfileData {
     firstName: string;
@@ -188,88 +191,63 @@ const ProfileSettings: React.FC = () => {
                                     {activeTab === 'personal' && (
                                         <>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                                                {/* Name fields */}
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                        First Name
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        name="firstName"
-                                                        value={profileData.firstName}
-                                                        onChange={handleChange}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                        Last Name
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        name="lastName"
-                                                        value={profileData.lastName}
-                                                        onChange={handleChange}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                                    />
-                                                </div>
+                                                <Input
+                                                    type="text"
+                                                    name="firstName"
+                                                    value={profileData.firstName}
+                                                    onChange={handleChange}
+                                                    label="First Name"
+                                                    required
+                                                />
+                                                <Input
+                                                    type="text"
+                                                    name="lastName"
+                                                    value={profileData.lastName}
+                                                    onChange={handleChange}
+                                                    label="Last Name"
+                                                    required
+                                                />
                                             </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                    Email Address
-                                                </label>
-                                                <input
+                                            <div className="mt-4">
+                                                <Input
                                                     type="email"
                                                     name="email"
                                                     value={profileData.email}
                                                     onChange={handleChange}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                                    label="Email Address"
+                                                    required
                                                 />
                                             </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                    Phone Number
-                                                </label>
-                                                <input
+                                            <div className="mt-4">
+                                                <Input
                                                     type="tel"
                                                     name="phone"
                                                     value={profileData.phone || ''}
                                                     onChange={handleChange}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                                    label="Phone Number"
+                                                    helperText="Format: +1 123-456-7890 (optional)"
                                                 />
-                                                <p className="mt-1 text-xs text-gray-500">
-                                                    Format: +1 123-456-7890 (optional)
-                                                </p>
                                             </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                        Date of Birth
-                                                    </label>
-                                                    <input
-                                                        type="date"
-                                                        name="dateOfBirth"
-                                                        value={profileData.dateOfBirth || ''}
-                                                        onChange={handleChange}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                        Gender
-                                                    </label>
-                                                    <select
-                                                        name="gender"
-                                                        value={profileData.gender || ''}
-                                                        onChange={handleChange}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                                    >
-                                                        <option value="">Select gender</option>
-                                                        <option value="male">Male</option>
-                                                        <option value="female">Female</option>
-                                                        <option value="other">Other</option>
-                                                    </select>
-                                                </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mt-4">
+                                                <Input
+                                                    type="date"
+                                                    name="dateOfBirth"
+                                                    value={profileData.dateOfBirth || ''}
+                                                    onChange={handleChange}
+                                                    label="Date of Birth"
+                                                />
+                                                <Select
+                                                    name="gender"
+                                                    value={profileData.gender || ''}
+                                                    onChange={handleChange}
+                                                    label="Gender"
+                                                    options={[
+                                                        { value: '', label: 'Select gender' },
+                                                        { value: 'male', label: 'Male' },
+                                                        { value: 'female', label: 'Female' },
+                                                        { value: 'other', label: 'Other' }
+                                                    ]}
+                                                />
                                             </div>
                                         </>
                                     )}
@@ -277,52 +255,38 @@ const ProfileSettings: React.FC = () => {
                                     {activeTab === 'medical' && (
                                         <div className="space-y-6">
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                        Height (cm)
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        name="height"
-                                                        value={profileData.height || ''}
-                                                        onChange={handleChange}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                        Weight (kg)
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        name="weight"
-                                                        value={profileData.weight || ''}
-                                                        onChange={handleChange}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                    Blood Type
-                                                </label>
-                                                <select
-                                                    name="bloodType"
-                                                    value={profileData.bloodType || ''}
+                                                <Input
+                                                    type="number"
+                                                    name="height"
+                                                    value={profileData.height || ''}
                                                     onChange={handleChange}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                                >
-                                                    <option value="">Select blood type</option>
-                                                    <option value="A+">A+</option>
-                                                    <option value="A-">A-</option>
-                                                    <option value="B+">B+</option>
-                                                    <option value="B-">B-</option>
-                                                    <option value="AB+">AB+</option>
-                                                    <option value="AB-">AB-</option>
-                                                    <option value="O+">O+</option>
-                                                    <option value="O-">O-</option>
-                                                </select>
+                                                    label="Height (cm)"
+                                                />
+                                                <Input
+                                                    type="number"
+                                                    name="weight"
+                                                    value={profileData.weight || ''}
+                                                    onChange={handleChange}
+                                                    label="Weight (kg)"
+                                                />
                                             </div>
+                                            <Select
+                                                name="bloodType"
+                                                value={profileData.bloodType || ''}
+                                                onChange={handleChange}
+                                                label="Blood Type"
+                                                options={[
+                                                    { value: '', label: 'Select blood type' },
+                                                    { value: 'A+', label: 'A+' },
+                                                    { value: 'A-', label: 'A-' },
+                                                    { value: 'B+', label: 'B+' },
+                                                    { value: 'B-', label: 'B-' },
+                                                    { value: 'AB+', label: 'AB+' },
+                                                    { value: 'AB-', label: 'AB-' },
+                                                    { value: 'O+', label: 'O+' },
+                                                    { value: 'O-', label: 'O-' }
+                                                ]}
+                                            />
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                                     Allergies
@@ -361,29 +325,15 @@ const ProfileSettings: React.FC = () => {
 
                                 {/* Submit Button - Full width on mobile, auto width on desktop */}
                                 <div className="mt-6 flex justify-end">
-                                    <button
+                                    <Button
                                         type="submit"
+                                        variant="primary"
+                                        isLoading={isSaving}
                                         disabled={isSaving}
-                                        className={`w-full md:w-auto flex items-center justify-center px-4 py-2
-                                            text-sm font-medium text-white bg-indigo-600 
-                                            hover:bg-indigo-700 focus:outline-none focus:ring-2 
-                                            focus:ring-offset-2 focus:ring-indigo-500
-                                            rounded-md shadow-sm transition-colors
-                                            ${isSaving ? 'opacity-70 cursor-not-allowed' : ''}
-                                        `}
+                                        className="w-full md:w-auto"
                                     >
-                                        {isSaving ? (
-                                            <>
-                                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                                Saving...
-                                            </>
-                                        ) : (
-                                            'Save Changes'
-                                        )}
-                                    </button>
+                                        Save Changes
+                                    </Button>
                                 </div>
                             </form>
                         </div>

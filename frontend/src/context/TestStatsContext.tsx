@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import api from '../services/api';
 import { useAuth } from './AuthContext';
+import { useStats } from '../hooks/useApiQueries';
 
 // Import the CBC parameters from constants
 import { CBC_PARAMETERS } from '../constants/testParameters';
@@ -16,7 +17,7 @@ interface TestStats {
 interface TestStatsContextProps {
     stats: any;
     loading: boolean;
-    refreshStats: () => Promise<void>;
+    refreshStats: () => Promise<any>;
     availableTestTypes: string[];
     updateAvailableTestTypes: (newTypes: string[]) => void;
     updateTestParameters: (parameters: Record<string, any>) => void;
@@ -35,9 +36,15 @@ const getStoredParameters = () => {
 
 export const TestStatsProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     const { user } = useAuth();
-    const [stats, setStats] = useState<any>(null);
-    const [loading, setLoading] = useState<boolean>(true);
     const [selectedFilter, setSelectedFilter] = useState<string>('week');
+    
+    // Use the centralized React Query hook
+    const { data: stats, isLoading: loading, refetch } = useStats();
+    
+    // Create a wrapper function that matches our interface
+    const refreshStats = async () => {
+        return await refetch();
+    };
     
     // Initialize with BOTH default and stored parameters
     const [testParameters, setTestParameters] = useState(() => getStoredParameters());
@@ -46,28 +53,6 @@ export const TestStatsProvider: React.FC<{children: ReactNode}> = ({ children })
     const [availableTestTypes, setAvailableTestTypes] = useState<string[]>(() => 
         Object.keys(testParameters)
     );
-
-    const fetchStats = async () => {
-        try {
-            setLoading(true);
-            const response = await api.get(`/api/tests/stats`);
-            setStats(response.data);
-        } catch (error) {
-            console.error('Error fetching stats:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        if (user?.id) {
-            fetchStats();
-        }
-    }, [user, selectedFilter]);
-
-    const refreshStats = async () => {
-        await fetchStats();
-    };
 
     const updateAvailableTestTypes = (newTypes: string[]) => {
         setAvailableTestTypes(prev => {

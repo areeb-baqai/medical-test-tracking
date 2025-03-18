@@ -114,15 +114,20 @@ const MedicalForm: React.FC = () => {
                 userId: user?.id,
                 testDate: testData.testDate,
                 tests: testsToSubmit
-            });
-            
-            // Force refresh of relevant queries
-            await queryClient.invalidateQueries({
-                queryKey: [queryKeys.medicalData, 'medical-data']
+            }, {
+                onSuccess: () => {
+                    // Force refresh of relevant queries
+                    queryClient.invalidateQueries({
+                    queryKey: [queryKeys.medicalData, user?.id]
+                    });
+                    queryClient.invalidateQueries({
+                        queryKey: [queryKeys.stats, user?.id]
+                    });
+                }
             });
             
             // Additional refresh for specific dashboard-related data
-            await refreshStats();
+            // await refreshStats();
             
             toast.success('Test results recorded successfully!');
             navigate('/dashboard');
